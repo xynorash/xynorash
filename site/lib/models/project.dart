@@ -20,10 +20,6 @@ class Buffer {
   final String icon;
   final String filetype;
   final String? repo;
-
-  /// Private/internal project: listed like a repo but has no public GitHub
-  /// stats line and no link.
-  final bool internal;
   final int fallbackStars;
   final String fallbackPushed;
   final List<CodeLine> lines;
@@ -34,7 +30,6 @@ class Buffer {
     required this.icon,
     required this.filetype,
     this.repo,
-    this.internal = false,
     this.fallbackStars = 0,
     this.fallbackPushed = '',
     required this.lines,
