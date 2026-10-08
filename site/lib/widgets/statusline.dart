@@ -49,7 +49,7 @@ class Statusline extends StatelessWidget {
           sepR(t.bgHighlight, t.bg),
           Flexible(
             child: seg(
-                '${state.buffer.icon} ${state.buffer.fileName}'
+                '${state.buffer.icon} ${state.buffer.fullPath.replaceAll('/', ' › ')}'
                 '${section == null ? '' : '  › $section'}',
                 t.fg,
                 t.bg),

@@ -1,20 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
-import 'package:xnash_portfolio/services/github_stats.dart';
-import 'package:xnash_portfolio/state/app_state.dart';
-import 'package:xnash_portfolio/theme/theme_controller.dart';
+import 'package:xnash_portfolio/data/projects.dart';
 import 'package:xnash_portfolio/widgets/dashboard.dart';
 
-AppState makeState() => AppState(
-      theme: ThemeController(load: () => null, save: (_) {}),
-      github: GithubStats(
-          client: MockClient((_) async => http.Response('nope', 403))),
-    );
+import 'support.dart';
 
 void main() {
-  testWidgets('dashboard lists project entries and opens them',
+  testWidgets('dashboard lists projects as directories and opens them',
       (tester) async {
     final s = makeState();
     await tester.pumpWidget(MaterialApp(
@@ -25,17 +17,20 @@ void main() {
         ),
       ),
     ));
-    expect(find.text('heaplens.rs'), findsOneWidget);
-    expect(find.text('find project'), findsOneWidget);
-    await tester.tap(find.text('xynovim.lua'));
+    for (final p in projectNames) {
+      expect(find.text('$p/'), findsOneWidget);
+    }
+    expect(find.text('find file'), findsOneWidget);
+    await tester.tap(find.text('${projectNames[1]}/'));
     await tester.pump();
-    expect(s.bufferIndex, 2);
+    expect(s.buffer.fullPath, '${projectNames[1]}/README.md');
+    expect(s.expandedDirs, contains(projectNames[1]));
   });
 
-  test('welcome-buffer shortcuts: digits, a, t', () {
+  test('welcome-buffer shortcuts: digits open projects, a, t', () {
     final s = makeState();
     s.handleKey('2');
-    expect(s.bufferIndex, 2);
+    expect(s.buffer.fullPath, '${projectNames[1]}/README.md');
     s.openBuffer(0);
     s.handleKey('a');
     expect(s.buffer.fileName, 'about.md');

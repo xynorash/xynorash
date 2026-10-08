@@ -1,3 +1,23 @@
+/// Fuzzy score of [candidate] for [query] (lower is better), or null when
+/// [query] is not a case-insensitive subsequence of it.
+int? fuzzyScore(String query, String candidate) {
+  final q = query.toLowerCase();
+  final c = candidate.toLowerCase();
+  var qi = 0;
+  int? first;
+  var gaps = 0;
+  int? last;
+  for (var ci = 0; ci < c.length && qi < q.length; ci++) {
+    if (c[ci] == q[qi]) {
+      first ??= ci;
+      if (last != null) gaps += ci - last - 1;
+      last = ci;
+      qi++;
+    }
+  }
+  return qi == q.length ? (first ?? 0) + gaps : null;
+}
+
 /// Returns indices of candidates whose characters contain `query` as a
 /// case-insensitive subsequence, best match first. Empty query → all.
 List<int> fuzzyRank(String query, List<String> candidates) {

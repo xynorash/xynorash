@@ -16,6 +16,11 @@ class CodeLine {
 /// One "open file" in the fake editor. `repo == null` for plain md pages.
 class Buffer {
   final String id;
+
+  /// Repo-relative path including the project directory, e.g.
+  /// `heaplens/crates/heaplens-alloc/src/ring.rs`. Drives the explorer tree.
+  /// Defaults to [fileName] for top-level pages (welcome.md, about.md).
+  final String path;
   final String fileName;
   final String icon;
   final String filetype;
@@ -33,6 +38,7 @@ class Buffer {
 
   const Buffer({
     required this.id,
+    this.path = '',
     required this.fileName,
     required this.icon,
     required this.filetype,
@@ -43,6 +49,15 @@ class Buffer {
     this.fallbackPushed = '',
     required this.lines,
   });
+
+  /// Full path, falling back to the bare file name.
+  String get fullPath => path.isEmpty ? fileName : path;
+
+  /// Top-level directory (the project), or null for top-level pages.
+  String? get project {
+    final i = fullPath.indexOf('/');
+    return i < 0 ? null : fullPath.substring(0, i);
+  }
 
   /// Section headings (`# title` lines) as (line index, title), in order.
   /// Powers the outline overlay, `]]` / `[[` jumps and the statusline crumb.

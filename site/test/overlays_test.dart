@@ -1,19 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:xnash_portfolio/keymap/dispatcher.dart';
-import 'package:xnash_portfolio/services/github_stats.dart';
 import 'package:xnash_portfolio/state/app_state.dart';
-import 'package:xnash_portfolio/theme/theme_controller.dart';
 import 'package:xnash_portfolio/widgets/telescope.dart';
 import 'package:xnash_portfolio/widgets/whichkey.dart';
 
-AppState makeState() => AppState(
-      theme: ThemeController(load: () => null, save: (_) {}),
-      github: GithubStats(
-          client: MockClient((_) async => http.Response('nope', 403))),
-    );
+import 'support.dart';
 
 Widget host(AppState s, Widget child) => MaterialApp(
       home: Scaffold(
@@ -26,23 +18,24 @@ void main() {
     final s = makeState();
     s.openWhichKey();
     await tester.pumpWidget(host(s, WhichKeyOverlay(state: s)));
-    await tester.tap(find.text('find project'));
+    await tester.tap(find.text('find file'));
     await tester.pump();
     expect(s.mode, UiMode.finder);
   });
 
-  testWidgets('telescope filters and enter opens buffer', (tester) async {
+  testWidgets('telescope shows names with their directories; enter opens',
+      (tester) async {
     final s = makeState();
     s.openFinder();
-    s.finderType('rash');
+    s.finderType('xynorash');
     await tester.pumpWidget(host(s, TelescopeOverlay(state: s)));
-    expect(find.textContaining('xynorash.ps1', findRichText: true),
-        findsOneWidget);
-    expect(find.textContaining('xynovim.lua', findRichText: true),
-        findsNothing);
+    expect(find.textContaining('README.md', findRichText: true),
+        findsWidgets);
+    expect(find.textContaining('xynorash-pwsh', findRichText: true),
+        findsWidgets);
     s.handleKey('Enter');
     await tester.pump();
-    expect(s.bufferIndex, 4);
+    expect(s.buffer.project, 'xynorash-pwsh');
     expect(s.mode, UiMode.normal);
   });
 
@@ -50,9 +43,19 @@ void main() {
     final s = makeState();
     s.openFinder();
     await tester.pumpWidget(host(s, TelescopeOverlay(state: s)));
-    await tester.tap(
-        find.textContaining('about.md', findRichText: true));
+    await tester.tap(find.textContaining('about.md', findRichText: true));
     await tester.pump();
     expect(s.buffer.fileName, 'about.md');
+  });
+
+  testWidgets('telescope caps the visible rows and reports the total',
+      (tester) async {
+    final s = makeState();
+    s.openFinder();
+    await tester.pumpWidget(host(s, TelescopeOverlay(state: s)));
+    final total = s.finderResults.length;
+    expect(find.textContaining('$total/', findRichText: true), findsOneWidget);
+    final shown = AppState.finderRows;
+    expect(s.finderResults.take(shown).length, lessThanOrEqualTo(shown));
   });
 }

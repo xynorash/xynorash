@@ -29,15 +29,25 @@ class Bufferline extends StatelessWidget {
           Expanded(
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: kBuffers.length,
-              itemBuilder: (_, i) {
+              itemCount: state.openBuffers.length,
+              itemBuilder: (_, k) {
+                final i = state.openBuffers[k];
                 final b = kBuffers[i];
                 final active = i == state.bufferIndex;
+                // Two open files with the same name (README.md, lib.rs…)
+                // get their parent directory, like a real bufferline.
+                final dup = state.openBuffers.any(
+                    (j) => j != i && kBuffers[j].fileName == b.fileName);
+                final parts = b.fullPath.split('/');
+                final label = (dup || b.fileName == 'README.md') &&
+                        parts.length > 1
+                    ? '${parts[parts.length - 2]}/${b.fileName}'
+                    : b.fileName;
                 return InkWell(
                   hoverColor: t.bgHighlight,
                   onTap: () => state.openBuffer(i),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.only(left: 12, right: 4),
                     decoration: BoxDecoration(
                       color: active ? t.bg : t.bgDark,
                       border: Border(
@@ -52,12 +62,20 @@ class Bufferline extends StatelessWidget {
                         Text(b.icon,
                             style: mono(active ? t.blue : t.muted, size: 12)),
                         const SizedBox(width: 6),
-                        Text(b.fileName,
+                        Text(label,
                             style: mono(active ? t.fg : t.muted, size: 12)),
-                        if (active) ...[
-                          const SizedBox(width: 6),
-                          Text('●', style: mono(t.accent, size: 8)),
-                        ],
+                        const SizedBox(width: 2),
+                        InkWell(
+                          onTap: () => state.closeBuffer(i),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 8),
+                            child: Text('\u{f00d}',
+                                style: mono(
+                                    active ? t.accent : t.muted.withValues(alpha: 0.6),
+                                    size: 10)),
+                          ),
+                        ),
                       ],
                     ),
                   ),

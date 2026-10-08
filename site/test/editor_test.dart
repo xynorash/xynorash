@@ -1,17 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
-import 'package:xnash_portfolio/services/github_stats.dart';
 import 'package:xnash_portfolio/state/app_state.dart';
-import 'package:xnash_portfolio/theme/theme_controller.dart';
 import 'package:xnash_portfolio/widgets/editor.dart';
 
-AppState makeState() => AppState(
-      theme: ThemeController(load: () => null, save: (_) {}),
-      github: GithubStats(
-          client: MockClient((_) async => http.Response('nope', 403))),
-    );
+import 'support.dart';
 
 Widget host(AppState s) => MaterialApp(
       home: Scaffold(
@@ -36,9 +28,11 @@ void main() {
   testWidgets('renders heaplens content and fallback stats line',
       (tester) async {
     final s = makeState();
-    s.openBuffer(1);
+    s.openBuffer(idxOf('heaplens/README.md'));
     await tester.pumpWidget(host(s));
-    expect(find.textContaining('live heap inspector', findRichText: true),
+    // the banner's second line is short enough to render unwrapped
+    final banner = s.buffer.lines[1].spans.map((x) => x.text).join();
+    expect(find.textContaining(banner.trim(), findRichText: true),
         findsOneWidget);
     s.handleKey('G'); // stats line is appended at the bottom of the buffer
     await tester.pump();

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../data/projects.dart';
 import '../state/app_state.dart';
 import 'style.dart';
 
@@ -63,11 +62,11 @@ class WhichKeyOverlay extends StatelessWidget {
               child: Text('SPC',
                   style: mono(t.yellow, size: 12, weight: FontWeight.w700)),
             ),
-            row('f', 'find project', state.openFinder),
+            row('f', 'find file', state.openFinder),
             row('o', 'outline of this page', state.openOutline),
             row('t', 'cycle theme', state.cycleTheme),
             row('e', 'toggle explorer', state.toggleExplorer),
-            row('1-${kBuffers.length}', 'goto buffer', () {}),
+            row('1-${state.openBuffers.length}', 'goto open tab', () {}),
             row('q', 'quit (good luck)', () => state.runCommand('q')),
           ],
         ),

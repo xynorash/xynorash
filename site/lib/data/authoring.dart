@@ -75,3 +75,94 @@ List<CodeLine> sec(String title) => [blank, heading('# $title')];
 /// A blank line before a code excerpt.
 List<CodeLine> code(String lang, String path, String src) =>
     [blank, ...codeBlock(lang, path, src), blank];
+
+// ── Pages ────────────────────────────────────────────────────────────────
+
+/// Nerd-font icon for a file name.
+String iconFor(String fileName) {
+  final n = fileName.toLowerCase();
+  final ext = n.contains('.') ? n.substring(n.lastIndexOf('.') + 1) : '';
+  if (n == 'readme.md') return '\u{f48a}';
+  if (n == 'cargo.toml' || n == 'cargo.lock') return '\u{e7a8}';
+  if (n == 'install.sh') return '\u{f489}';
+  return switch (ext) {
+    'rs' => '\u{e7a8}',
+    'lua' => '\u{e620}',
+    'dart' => '\u{e798}',
+    'ps1' || 'psm1' => '\u{ebc7}',
+    'sh' || 'bash' => '\u{f489}',
+    'py' => '\u{e73c}',
+    'js' || 'mjs' => '\u{e74e}',
+    'json' || 'jsonc' => '\u{e60b}',
+    'toml' || 'ini' || 'conf' || 'cfg' => '\u{e615}',
+    'yaml' || 'yml' => '\u{e6a8}',
+    'md' => '\u{f48a}',
+    'csv' => '\u{f1c3}',
+    'txt' => '\u{f15c}',
+    'service' => '\u{f013}',
+    _ => '\u{f15b}',
+  };
+}
+
+/// Editor filetype for a file name.
+String filetypeFor(String fileName) {
+  final n = fileName.toLowerCase();
+  final ext = n.contains('.') ? n.substring(n.lastIndexOf('.') + 1) : '';
+  return switch (ext) {
+    'rs' => 'rust',
+    'lua' => 'lua',
+    'dart' => 'dart',
+    'ps1' || 'psm1' => 'powershell',
+    'sh' || 'bash' => 'bash',
+    'py' => 'python',
+    'js' || 'mjs' => 'js',
+    'json' || 'jsonc' => 'json',
+    'toml' || 'ini' || 'conf' || 'cfg' || 'service' => 'ini',
+    'md' => 'markdown',
+    _ => 'text',
+  };
+}
+
+/// Builds a page in the project tree. [path] is the repo-relative path with
+/// the project directory first (`heaplens/crates/heaplens-alloc/src/ring.rs`);
+/// id, file name, icon and filetype are derived from it.
+Buffer makePage(
+  String path, {
+  required List<CodeLine> lines,
+  String summary = '',
+  String? repo,
+  int fallbackStars = 0,
+  String fallbackPushed = '',
+}) {
+  final name = path.substring(path.lastIndexOf('/') + 1);
+  return Buffer(
+    id: path,
+    path: path,
+    fileName: name,
+    icon: iconFor(name),
+    filetype: filetypeFor(name),
+    repo: repo,
+    summary: summary,
+    fallbackStars: fallbackStars,
+    fallbackPushed: fallbackPushed,
+    lines: lines,
+  );
+}
+
+/// A wrapped plain-text paragraph (for markdown pages, where prose is not
+/// shown as comments).
+List<CodeLine> text(String t, {int width = 64}) =>
+    [for (final l in wrapText(t, width)) plain(l)];
+
+/// A wrapped markdown-style bullet: highlighted head, hanging indent.
+List<CodeLine> bullet(String head, String rest, {int width = 64}) {
+  final ls = wrapText('$head — $rest', width - 2);
+  return [
+    CodeLine([
+      const Span('- ', Tok.punct),
+      Span(head, Tok.type),
+      Span(ls.first.substring(head.length), Tok.plain),
+    ]),
+    for (final l in ls.skip(1)) plain('  $l'),
+  ];
+}

@@ -4,6 +4,12 @@ import '../data/projects.dart';
 import '../state/app_state.dart';
 import 'style.dart';
 
+/// "  heaplens/crates/…" — the directory part of a path, for dimmed display.
+String _dirOf(String path) {
+  final i = path.lastIndexOf('/');
+  return i < 0 ? '' : '  ${path.substring(0, i)}';
+}
+
 class TelescopeOverlay extends StatelessWidget {
   final AppState state;
   const TelescopeOverlay({super.key, required this.state});
@@ -11,7 +17,8 @@ class TelescopeOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = state.themeController.theme;
-    final results = state.finderResults;
+    final all = state.finderResults;
+    final results = all.take(AppState.finderRows).toList();
     final selected =
         results.isEmpty ? -1 : state.finderSelection.clamp(0, results.length - 1);
 
@@ -20,7 +27,7 @@ class TelescopeOverlay extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Container(
-            constraints: const BoxConstraints(maxWidth: 560),
+            constraints: const BoxConstraints(maxWidth: 640),
             margin: const EdgeInsets.symmetric(horizontal: 20),
             decoration: BoxDecoration(
               color: t.bgDark,
@@ -71,13 +78,18 @@ class TelescopeOverlay extends StatelessWidget {
                           text: kBuffers[results[r]].fileName,
                           style: mono(
                               r == selected ? t.fg : t.fgDim, size: 12)),
+                      TextSpan(
+                          text: _dirOf(kBuffers[results[r]].fullPath),
+                          style: mono(t.muted, size: 11)),
                     ]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              child: Text('${results.length}/${kBuffers.length}',
+              child: Text('${all.length}/${kBuffers.length}',
                   style: mono(t.muted, size: 11)),
             ),
           ],

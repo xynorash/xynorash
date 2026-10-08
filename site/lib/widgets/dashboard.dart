@@ -65,10 +65,19 @@ class Dashboard extends StatelessWidget {
           ),
         );
 
-    final projects =
-        [for (var i = 0; i < kBuffers.length; i++) (i, kBuffers[i])]
-            .where((e) => e.$2.repo != null || e.$2.internal)
-            .toList();
+    // Projects are directories; each opens its README and expands in the
+    // explorer.
+    final projects = [
+      for (final name in projectNames)
+        (
+          name,
+          kBuffers.firstWhere((b) => b.fullPath == '$name/README.md'),
+        ),
+    ];
+    final internal = [
+      for (final b in kBuffers)
+        if (b.internal && b.fullPath.endsWith('README.md')) b,
+    ];
 
     return Container(
       color: t.bg,
@@ -95,12 +104,17 @@ class Dashboard extends StatelessWidget {
             Text('Solving problems at the edge of impossible.',
                 style: mono(t.fgDim, size: 13, style: FontStyle.italic)),
             const SizedBox(height: 28),
-            for (final (i, b) in projects)
-              entry('$i', b.icon, b.fileName, () => state.openBuffer(i),
+            for (var i = 0; i < projects.length; i++)
+              entry('${i + 1}', '\u{f07b}', '${projects[i].$1}/',
+                  () => state.openProject(projects[i].$1),
+                  summary: projects[i].$2.summary),
+            for (final b in internal)
+              entry('', '\u{f023}', '${b.project ?? b.fileName}/',
+                  () => state.openBuffer(kBuffers.indexOf(b)),
                   summary: b.summary),
             entry('a', '\u{f48a}', 'about.md',
                 () => state.openBuffer(kBuffers.length - 1)),
-            entry('SPC f', '\u{f002}', 'find project', state.openFinder),
+            entry('SPC f', '\u{f002}', 'find file', state.openFinder),
             entry('t', '\u{f043b}', 'cycle theme', state.cycleTheme),
             const SizedBox(height: 28),
             Text('⚡ xynovim loaded ${projects.length} projects in 0.038s',

@@ -1,30 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:xnash_portfolio/data/projects.dart';
 import 'package:xnash_portfolio/keymap/dispatcher.dart';
 import 'package:xnash_portfolio/models/project.dart';
-import 'package:xnash_portfolio/services/github_stats.dart';
-import 'package:xnash_portfolio/state/app_state.dart';
-import 'package:xnash_portfolio/theme/theme_controller.dart';
 import 'package:xnash_portfolio/widgets/editor.dart';
 
-AppState makeState() => AppState(
-      theme: ThemeController(load: () => null, save: (_) {}),
-      github: GithubStats(
-          client: MockClient((_) async => http.Response('nope', 403))),
-    );
+import 'support.dart';
 
 void main() {
-  test('every project buffer has a navigable outline', () {
+  test('every project README has a navigable outline', () {
     for (final b in kBuffers.where((b) => b.repo != null)) {
-      expect(b.outline.length, greaterThanOrEqualTo(2), reason: b.fileName);
+      expect(b.outline.length, greaterThanOrEqualTo(2), reason: b.fullPath);
       expect(b.outline.first.line, lessThan(b.lines.length));
     }
   });
 
   test('sectionAt finds the enclosing heading', () {
-    final b = kBuffers[1];
+    final b = kBuffers[idxOf('heaplens/README.md')];
     final s = b.outline[2];
     expect(b.sectionAt(s.line)!.title, s.title);
     expect(b.sectionAt(s.line + 1)!.title, s.title);
@@ -32,7 +23,7 @@ void main() {
   });
 
   test(']] and [[ jump between sections', () {
-    final s = makeState()..openBuffer(1);
+    final s = makeState()..openBuffer(idxOf('heaplens/README.md'));
     final o = s.buffer.outline;
     s.handleKey(']');
     s.handleKey(']');
@@ -46,7 +37,7 @@ void main() {
   });
 
   test('space o opens the outline; enter jumps; esc closes', () {
-    final s = makeState()..openBuffer(1);
+    final s = makeState()..openBuffer(idxOf('heaplens/README.md'));
     s.handleKey(' ');
     s.handleKey('o');
     expect(s.mode, UiMode.outline);

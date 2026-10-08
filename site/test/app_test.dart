@@ -11,11 +11,10 @@ void main() {
     expect(find.text('welcome.md'), findsWidgets); // bufferline + tree
     expect(find.text('NORMAL'), findsOneWidget);
 
-    // ]b → next buffer
-    await tester.sendKeyEvent(LogicalKeyboardKey.bracketRight);
-    await tester.sendKeyEvent(LogicalKeyboardKey.keyB);
+    // On the dashboard, "1" opens the first project's README as a tab.
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
     await tester.pump();
-    expect(find.textContaining('heaplens.rs'), findsWidgets);
+    expect(find.textContaining('README.md'), findsWidgets);
 
     // Space f → telescope
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
