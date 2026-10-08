@@ -56,7 +56,7 @@ class Dashboard extends StatelessWidget {
 
     final projects =
         [for (var i = 0; i < kBuffers.length; i++) (i, kBuffers[i])]
-            .where((e) => e.$2.repo != null)
+            .where((e) => e.$2.repo != null || e.$2.internal)
             .toList();
 
     return Container(
@@ -91,7 +91,7 @@ class Dashboard extends StatelessWidget {
             entry('SPC f', '\u{f002}', 'find project', state.openFinder),
             entry('t', '\u{f043b}', 'cycle theme', state.cycleTheme),
             const SizedBox(height: 28),
-            Text('⚡ xynovim loaded 4 projects in 0.038s',
+            Text('⚡ xynovim loaded ${projects.length} projects in 0.038s',
                 style: mono(t.muted, size: 12)),
           ],
         ),
