@@ -17,11 +17,14 @@ class ConfirmSelection extends Intent2 { const ConfirmSelection(); }
 class MoveSelectionDown extends Intent2 { const MoveSelectionDown(); }
 class MoveSelectionUp extends Intent2 { const MoveSelectionUp(); }
 class CycleTheme extends Intent2 { const CycleTheme(); }
+class OpenOutline extends Intent2 { const OpenOutline(); }
+class NextSection extends Intent2 { const NextSection(); }
+class PrevSection extends Intent2 { const PrevSection(); }
 
-enum UiMode { normal, whichkey, finder, cmdline }
+enum UiMode { normal, whichkey, finder, outline, cmdline }
 
 /// Turns logical key labels into intents; holds multi-key pending state
-/// (`gg`, `[b`, `]b`). Pure logic — no widget dependencies.
+/// (`gg`, `[b`, `]b`, `[[`, `]]`). Pure logic — no widget dependencies.
 class KeyDispatcher {
   String pending = '';
 
@@ -43,6 +46,16 @@ class KeyDispatcher {
             return const OpenFinder();
           case 't':
             return const CycleTheme();
+          case 'o':
+            return const OpenOutline();
+          case 'j':
+            return const MoveSelectionDown();
+          case 'k':
+            return const MoveSelectionUp();
+        }
+      }
+      if (mode == UiMode.outline) {
+        switch (key) {
           case 'j':
             return const MoveSelectionDown();
           case 'k':
@@ -59,10 +72,12 @@ class KeyDispatcher {
     }
     if (pending == '[') {
       pending = '';
+      if (key == '[') return const PrevSection();
       return key == 'b' ? const PrevBuffer() : null;
     }
     if (pending == ']') {
       pending = '';
+      if (key == ']') return const NextSection();
       return key == 'b' ? const NextBuffer() : null;
     }
 

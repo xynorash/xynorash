@@ -12,6 +12,7 @@ class Statusline extends StatelessWidget {
     final t = state.themeController.theme;
     final total = state.buffer.lines.length;
     final line = state.scrollLines + 1;
+    final section = state.buffer.sectionAt(state.scrollLines)?.title;
     final pct = total <= 1 ? 100 : ((line / total) * 100).round();
 
     Widget seg(String text, Color fg, Color bg,
@@ -47,8 +48,11 @@ class Statusline extends StatelessWidget {
           seg('\u{e725} main', t.fgDim, t.bgHighlight),
           sepR(t.bgHighlight, t.bg),
           Flexible(
-            child: seg('${state.buffer.icon} ${state.buffer.fileName}',
-                t.fg, t.bg),
+            child: seg(
+                '${state.buffer.icon} ${state.buffer.fileName}'
+                '${section == null ? '' : '  › $section'}',
+                t.fg,
+                t.bg),
           ),
           Expanded(child: Container(color: t.bg)),
           sepL(t.bg, t.bgHighlight),

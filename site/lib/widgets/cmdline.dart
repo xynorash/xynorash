@@ -24,10 +24,28 @@ class CmdlineBar extends StatelessWidget {
       left = Text(state.message,
           style: mono(t.red, size: 12), overflow: TextOverflow.ellipsis);
     } else {
-      left = Text(
-        'Space → menu · Space f → find · : → cmd',
-        style: mono(t.muted, size: 12),
-        overflow: TextOverflow.ellipsis,
+      Widget chip(String key, String label, VoidCallback onTap) => InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 14),
+              child: Text.rich(TextSpan(children: [
+                TextSpan(
+                    text: key,
+                    style:
+                        mono(t.accent, size: 12, weight: FontWeight.w700)),
+                TextSpan(text: ' $label', style: mono(t.muted, size: 12)),
+              ])),
+            ),
+          );
+      left = ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          chip('SPC', 'menu', state.openWhichKey),
+          chip('f', 'find', state.openFinder),
+          chip('o', 'outline', state.openOutline),
+          chip('t', 'theme', state.cycleTheme),
+          chip(':', 'cmd', state.openCmdline),
+        ],
       );
     }
     return Container(

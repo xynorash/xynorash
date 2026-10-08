@@ -19,6 +19,7 @@ class AppState extends ChangeNotifier {
 
   String finderQuery = '';
   int finderSelection = 0;
+  int outlineSelection = 0;
 
   String cmdline = '';
   String message = '';
@@ -44,11 +45,44 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Called by the editor when the user scrolls with wheel/touch, so the
+  /// statusline position follows what is actually on screen.
+  void syncScroll(int line) {
+    if (line == scrollLines) return;
+    scrollLines = line;
+    notifyListeners();
+  }
+
   void openFinder() {
     mode = UiMode.finder;
     finderQuery = '';
     finderSelection = 0;
     notifyListeners();
+  }
+
+  void openOutline() {
+    final cur = buffer.sectionAt(scrollLines);
+    outlineSelection = cur == null ? 0 : buffer.outline.indexOf(cur);
+    mode = UiMode.outline;
+    notifyListeners();
+  }
+
+  /// Jumps to the section at [index] in the current buffer's outline.
+  void gotoSection(int index) {
+    final o = buffer.outline;
+    if (o.isEmpty) return closeOverlay();
+    scrollLines = o[index.clamp(0, o.length - 1)].line;
+    mode = UiMode.normal;
+    notifyListeners();
+  }
+
+  void _stepSection(int dir) {
+    final o = buffer.outline;
+    if (o.isEmpty) return;
+    final target = dir > 0
+        ? o.where((s) => s.line > scrollLines).firstOrNull
+        : o.where((s) => s.line < scrollLines).lastOrNull;
+    scrollLines = (target ?? (dir > 0 ? o.last : o.first)).line;
   }
 
   void openWhichKey() {
@@ -156,6 +190,7 @@ class AppState extends ChangeNotifier {
         openBuffer(digit - 1);
         return;
       }
+      if (key == 'o') return openOutline();
       if (key == 'e') {
         toggleExplorer();
         return;
@@ -175,6 +210,11 @@ class AppState extends ChangeNotifier {
       }
       if (key == 'a') return openBuffer(kBuffers.length - 1);
       if (key == 't') return cycleTheme();
+    }
+
+    if (mode == UiMode.outline) {
+      // Outline overlay: Enter jumps, arrows/jk move (via the dispatcher).
+      if (key == 'Enter') return gotoSection(outlineSelection);
     }
 
     final intent = dispatcher.feed(key, mode);
@@ -207,11 +247,27 @@ class AppState extends ChangeNotifier {
         if (mode == UiMode.finder) return confirmFinder();
         return closeOverlay();
       case MoveSelectionDown():
-        final n = finderResults.length;
-        if (n > 0) finderSelection = (finderSelection + 1) % n;
+        if (mode == UiMode.outline) {
+          final n = buffer.outline.length;
+          if (n > 0) outlineSelection = (outlineSelection + 1) % n;
+        } else {
+          final n = finderResults.length;
+          if (n > 0) finderSelection = (finderSelection + 1) % n;
+        }
       case MoveSelectionUp():
-        final n = finderResults.length;
-        if (n > 0) finderSelection = (finderSelection - 1 + n) % n;
+        if (mode == UiMode.outline) {
+          final n = buffer.outline.length;
+          if (n > 0) outlineSelection = (outlineSelection - 1 + n) % n;
+        } else {
+          final n = finderResults.length;
+          if (n > 0) finderSelection = (finderSelection - 1 + n) % n;
+        }
+      case OpenOutline():
+        return openOutline();
+      case NextSection():
+        _stepSection(1);
+      case PrevSection():
+        _stepSection(-1);
       case CycleTheme():
         return cycleTheme();
     }
