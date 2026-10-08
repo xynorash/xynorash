@@ -105,6 +105,7 @@ final List<Buffer> kBuffers = [
     icon: '\u{e7a8}',
     filetype: 'rust',
     repo: 'heaplens',
+    summary: 'live heap inspector · Rust + Flutter',
     fallbackStars: 0,
     fallbackPushed: '2026-07-28',
     lines: [
@@ -127,11 +128,11 @@ final List<Buffer> kBuffers = [
           'by graph building, symbol lookup or UI traffic.'),
       ..._sec('the pipeline'),
       _plain(r'  target process'),
-      _plain(r'    └─ heaplens-alloc | heaplens-hook   (capture)'),
-      _plain(r'         └─ named pipe, binary frames'),
-      _plain(r'              └─ heaplens-daemon        (model)'),
-      _plain(r'                   └─ WebSocket, JSON diffs @ ~33 ms'),
-      _plain(r'                        └─ heaplens_flutter  (view)'),
+      _plain(r'   ↓ heaplens-alloc | -hook     (capture)'),
+      _plain(r'   ↓ named pipe · binary frames'),
+      _plain(r'   ↓ heaplens-daemon            (model)'),
+      _plain(r'   ↓ WebSocket · JSON diffs ~33 ms'),
+      _plain(r'   ↓ heaplens_flutter           (view)'),
       _blank,
       ..._para('//',
           'Exactly two seams couple the units: the binary frame '
@@ -329,6 +330,7 @@ final List<Buffer> kBuffers = [
     icon: '\u{e620}',
     filetype: 'lua',
     repo: 'xynovim',
+    summary: 'LazyVim tuned for Rust · sub-second clippy',
     fallbackStars: 1,
     fallbackPushed: '2026-09-04',
     lines: [
@@ -464,6 +466,7 @@ final List<Buffer> kBuffers = [
     icon: '\u{e798}',
     filetype: 'dart',
     repo: 'xyno-scholar',
+    summary: 'AI research-topic explorer · client-side only',
     fallbackStars: 0,
     fallbackPushed: '2026-08-06',
     lines: [
@@ -502,6 +505,7 @@ final List<Buffer> kBuffers = [
     icon: '\u{ebc7}',
     filetype: 'powershell',
     repo: 'xynorash-pwsh',
+    summary: 'PowerShell 7 cockpit · live-vitals prompt',
     fallbackStars: 0,
     fallbackPushed: '2026-06-07',
     lines: [
@@ -608,6 +612,7 @@ final List<Buffer> kBuffers = [
     icon: '\u{f303}',
     filetype: 'bash',
     repo: 'xyno-arch',
+    summary: 'Hyprland desktop, reproducible · gaming-tuned',
     fallbackStars: 0,
     fallbackPushed: '2026-10-08',
     lines: [

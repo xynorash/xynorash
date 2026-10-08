@@ -10,6 +10,7 @@ import 'widgets/dashboard.dart';
 import 'widgets/cmdline.dart';
 import 'widgets/editor.dart';
 import 'widgets/neotree.dart';
+import 'widgets/outline.dart';
 import 'widgets/statusline.dart';
 import 'widgets/telescope.dart';
 import 'widgets/whichkey.dart';
@@ -105,7 +106,8 @@ class _ShellState extends State<Shell> {
                             else
                               EditorPane(state: state),
                             if (state.mode == UiMode.whichkey ||
-                                state.mode == UiMode.finder) ...[
+                                state.mode == UiMode.finder ||
+                                state.mode == UiMode.outline) ...[
                               Positioned.fill(
                                 child: GestureDetector(
                                   onTap: state.closeOverlay,
@@ -118,6 +120,8 @@ class _ShellState extends State<Shell> {
                                 WhichKeyOverlay(state: state),
                               if (state.mode == UiMode.finder)
                                 TelescopeOverlay(state: state),
+                              if (state.mode == UiMode.outline)
+                                OutlineOverlay(state: state),
                             ],
                           ],
                         ),

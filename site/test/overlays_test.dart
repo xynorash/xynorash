@@ -53,6 +53,6 @@ void main() {
     await tester.tap(
         find.textContaining('about.md', findRichText: true));
     await tester.pump();
-    expect(s.bufferIndex, 5);
+    expect(s.buffer.fileName, 'about.md');
   });
 }

@@ -22,7 +22,11 @@ class Dashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = state.themeController.theme;
 
-    Widget entry(String key, String icon, String label, VoidCallback onTap) =>
+    // Descriptions only where there is room beside the explorer.
+    final showSummary = MediaQuery.sizeOf(context).width >= 940;
+
+    Widget entry(String key, String icon, String label, VoidCallback onTap,
+            {String summary = ''}) =>
         InkWell(
           onTap: onTap,
           hoverColor: t.bgHighlight,
@@ -38,6 +42,13 @@ class Dashboard extends StatelessWidget {
                   width: 190,
                   child: Text(label, style: mono(t.fg, size: 13)),
                 ),
+                if (showSummary)
+                  SizedBox(
+                    width: 330,
+                    child: Text(summary,
+                        overflow: TextOverflow.ellipsis,
+                        style: mono(t.muted, size: 11)),
+                  ),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
@@ -85,7 +96,8 @@ class Dashboard extends StatelessWidget {
                 style: mono(t.fgDim, size: 13, style: FontStyle.italic)),
             const SizedBox(height: 28),
             for (final (i, b) in projects)
-              entry('$i', b.icon, b.fileName, () => state.openBuffer(i)),
+              entry('$i', b.icon, b.fileName, () => state.openBuffer(i),
+                  summary: b.summary),
             entry('a', '\u{f48a}', 'about.md',
                 () => state.openBuffer(kBuffers.length - 1)),
             entry('SPC f', '\u{f002}', 'find project', state.openFinder),
