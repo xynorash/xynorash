@@ -38,7 +38,7 @@ void main() {
     final s = makeState();
     s.openBuffer(1);
     await tester.pumpWidget(host(s));
-    expect(find.textContaining('heaplens_protocol', findRichText: true),
+    expect(find.textContaining('live heap inspector', findRichText: true),
         findsOneWidget);
     s.handleKey('G'); // stats line is appended at the bottom of the buffer
     await tester.pump();
