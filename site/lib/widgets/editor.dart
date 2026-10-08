@@ -36,13 +36,30 @@ List<Span> _slice(List<Span> spans, int start, int end) {
 }
 
 /// Soft-wraps one logical line to [cols] columns at word boundaries, with a
-/// hanging indent that matches the line's own leading whitespace. Monospace,
-/// so column math is just character counts.
+/// hanging indent that matches the line's own leading whitespace. Code
+/// excerpts keep their gutter bar on continuation rows. Monospace, so
+/// column math is just character counts.
 List<List<Span>> wrapSpans(List<Span> spans, int cols) {
   final text = spans.map((s) => s.text).join();
   if (text.length <= cols) return [spans];
-  final indent = text.length - text.trimLeft().length;
-  final hang = indent.clamp(0, cols ~/ 3);
+
+  const bar = '  │ ';
+  final inCode = text.startsWith(bar);
+  final body = inCode ? text.substring(bar.length) : text;
+  final lead = body.length - body.trimLeft().length;
+  final List<Span> hangSpans;
+  if (inCode) {
+    hangSpans = [
+      const Span(bar, Tok.punct),
+      Span(' ' * (lead + 2), Tok.plain),
+    ];
+  } else {
+    final h = lead.clamp(0, cols ~/ 3);
+    hangSpans = h > 0 ? [Span(' ' * h, Tok.plain)] : const [];
+  }
+  final hang = hangSpans.fold<int>(0, (n, sp) => n + sp.text.length)
+      .clamp(0, cols ~/ 2);
+
   final rows = <List<Span>>[];
   var start = 0;
   var first = true;
@@ -56,7 +73,7 @@ List<List<Span>> wrapSpans(List<Span> spans, int cols) {
       if (sp > start + 1) end = sp;
     }
     var row = _slice(spans, start, end);
-    if (!first && hang > 0) row = [Span(' ' * hang, Tok.plain), ...row];
+    if (!first && hangSpans.isNotEmpty) row = [...hangSpans, ...row];
     rows.add(row);
     start = end;
     while (start < text.length && text[start] == ' ') {

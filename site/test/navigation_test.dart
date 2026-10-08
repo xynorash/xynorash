@@ -76,4 +76,22 @@ void main() {
         '// alpha beta gamma delta epsilon zeta eta theta');
     expect(wrapSpans(line, 200).length, 1);
   });
+
+  test('wrapped code lines keep their gutter bar and extra indent', () {
+    final line = [
+      const Span('  │ ', Tok.punct),
+      const Span('    let value = compute_something(argument_one, argument_two);',
+          Tok.plain),
+    ];
+    final rows = wrapSpans(line, 40);
+    expect(rows.length, greaterThan(1));
+    for (final r in rows) {
+      final t = r.map((x) => x.text).join();
+      expect(t.startsWith('  │ '), isTrue, reason: t);
+      expect(t.length, lessThanOrEqualTo(40));
+    }
+    // continuation rows are indented past the original code indent
+    final cont = rows[1].map((x) => x.text).join();
+    expect(cont.substring(4).startsWith('      '), isTrue);
+  });
 }
