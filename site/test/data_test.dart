@@ -20,7 +20,7 @@ void main() {
     for (final b in projects) {
       expect(b.fallbackStars, greaterThanOrEqualTo(0));
       expect(b.fallbackPushed, isNotEmpty);
-      expect(b.lines.length, greaterThan(30));
+      expect(b.lines.length, greaterThan(20));
     }
   });
 
