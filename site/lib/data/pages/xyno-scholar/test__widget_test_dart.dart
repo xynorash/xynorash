@@ -134,7 +134,9 @@ import 'package:web/web.dart' as web;'''),
         'test/mistral_client_test.dart reaches only the models, the '
         'client and the sanitiser, and test/sanitize_test.dart '
         'reaches only html_unescape. By the import graph neither '
-        'touches package:web, so they are plain-Dart tests. That '
+        'touches package:web, and in a scratch copy with '
+        'package:test in place of flutter_test all nine of their '
+        'tests pass on the plain Dart VM. That '
         'split is a quiet payoff of keeping every browser call '
         'inside two small files, session_storage.dart and '
         'web_download.dart.'),
