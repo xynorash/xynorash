@@ -20,7 +20,7 @@ void main() {
     s.handleKey(']');
     s.handleKey('b');
     expect(s.bufferIndex, 1);
-    for (var i = 0; i < kBuffers.length - 1; i++) {
+    for (var i = 0; i < 5; i++) {
       s.handleKey('L');
     }
     expect(s.bufferIndex, 0); // wrapped
