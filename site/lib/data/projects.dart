@@ -1,12 +1,20 @@
 import '../models/project.dart';
 import 'authoring.dart';
-import 'interim_pages.dart';
 import 'pages_registry.dart';
 
 /// Project directories in explorer order.
 const List<String> kProjectOrder = [
   'heaplens',
   'xynovim',
+  'xyno-rust.nvim',
+  'xyno-crates.nvim',
+  'xyno-imports.nvim',
+  'xyno-new.nvim',
+  'xyno-macros.nvim',
+  'xyno-sandbox.nvim',
+  'xyno-guard.nvim',
+  'xyno-history.nvim',
+  'xyno-clipboard.nvim',
   'xyno-scholar',
   'xynorash-pwsh',
   'xyno-arch',
@@ -24,7 +32,8 @@ Buffer(
       heading(r' >  <  \ V /| .`| | (_) |   / / _ \\__ \ __ |'),
       heading(r'/_/\_\  |_| |_|\_|\___/|_|_\/_/ \_\___/_||_|'),
       blank,
-      plain('Solving problems at the edge of impossible.'),
+      plain('Every system has an edge.'),
+      plain('I like to stand on it, curious, and see what’s past it.'),
       plain('Xynorash isn’t a name — it’s a coordinate.'),
       blank,
       cm('>', 'Nash Tefison · Rust · TypeScript · Dart · PowerShell · Neovim'),
@@ -33,6 +42,15 @@ Buffer(
       blank,
       item('-', 'heaplens/', 'live heap inspector for Windows'),
       item('-', 'xynovim/', 'my Neovim, tuned until it disappears'),
+      item('-', 'xyno-rust.nvim/', 'Cargo context, targets and routes pickers'),
+      item('-', 'xyno-crates.nvim/', 'search crates.io and add crates from the editor'),
+      item('-', 'xyno-imports.nvim/', 'auto-import without the completion menu'),
+      item('-', 'xyno-new.nvim/', 'new Rust projects from the dashboard'),
+      item('-', 'xyno-macros.nvim/', 'completion inside derive and helper attributes'),
+      item('-', 'xyno-sandbox.nvim/', 'a coding agent inside a bubblewrap jail'),
+      item('-', 'xyno-guard.nvim/', 'auto-save that never touches dependency files'),
+      item('-', 'xyno-history.nvim/', 'local history for every save'),
+      item('-', 'xyno-clipboard.nvim/', 'yanks that reach the other machine'),
       item('-', 'xyno-scholar/', 'AI research-topic explorer'),
       item('-', 'xynorash-pwsh/', 'a PowerShell cockpit with neon vitals'),
       item('-', 'xyno-arch/', 'my whole Arch desktop, reproducible'),
@@ -74,7 +92,7 @@ Buffer(
       item('-', 'TypeScript', 'products and platforms'),
       item('-', 'Dart/Flutter', 'this site, xyno-scholar, the heaplens UI'),
       item('-', 'PowerShell + Lua', 'the environments I live in'),
-      item('-', 'Neovim on Omarchy/Arch', 'the cockpit itself'),
+      item('-', 'Neovim on Omarchy/Arch', 'the cockpit itself, plus nine plugins I published'),
       item('-', 'Hyprland + systemd', 'the desktop around it'),
       blank,
       heading('# principles'),
@@ -94,18 +112,16 @@ Buffer(
       link('→ github.com/XNash', 'https://github.com/XNash'),
       link('→ daily.dev/xynorash', 'https://app.daily.dev/xynorash'),
       blank,
-      cm('>', 'Solving problems at the edge of impossible.'),
+      cm('>', 'Every system has an edge. I like to stand on it, curious.'),
     ],
   );
 
 /// Every page on the site: welcome, the project trees (pages mirror real
-/// repository files), then about. Interim placeholders are used only for
-/// paths that have no real page yet.
+/// repository files), then about.
 final List<Buffer> kBuffers = _assemble();
 
 List<Buffer> _assemble() {
   final byPath = <String, Buffer>{
-    for (final b in kInterimPages) b.fullPath: b,
     for (final b in kPageBuffers) b.fullPath: b,
   };
   final pages = byPath.values.toList()

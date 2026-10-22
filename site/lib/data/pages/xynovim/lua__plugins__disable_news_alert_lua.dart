@@ -17,13 +17,13 @@ final Buffer page = makePage(
     ...sec('the whole file'),
     ...code('lua', 'lua/plugins/disable-news-alert.lua · the entire file', r'''
 return {
-  "LazyVim/LazyVim",
-  opts = {
-    news = {
-      lazyvim = false,
-      neovim = false,
-    },
-  },
+	"LazyVim/LazyVim",
+	opts = {
+		news = {
+			lazyvim = false,
+			neovim = false,
+		},
+	},
 }'''),
     ...para('--',
         r'There is nothing to hide in nine lines, so this page is '
@@ -35,7 +35,7 @@ return {
 
     ...sec('what the names say, and what they do not'),
     ...para('--',
-        r'From the repo alone I can establish two things. The option '
+        r'From the repo alone two things are clear. The option '
         r'group is called news and has exactly two members, so there '
         r'are two sources of news that can be switched independently. '
         r'And lazyvim.json, the file LazyVim itself maintains, '
@@ -45,14 +45,7 @@ return {
     "NEWS.md": "10960"
   },'''),
     ...para('--',
-        r'My reading, from general knowledge of LazyVim and not from '
-        r'anything written in this repo, is that LazyVim can announce '
-        r'its own changes (the NEWS.md of the distribution) and '
-        r'Neovim’s release notes in a pop-up, and that the number is '
-        r'its bookkeeping for how much of NEWS.md has been shown. The '
-        r'repo gives no description of the feature, so I am labelling '
-        r'that as background and not as a documented fact about this '
-        r'config.'),
+        r'Nothing in this repo describes what these two options do. The names and the news record suggest the NEWS.md of the distribution and Neovim’s release notes, and the number looks like bookkeeping of what has been shown, but that is an inference from the names, not a documented fact about this config.'),
     blank,
     ...para('--',
         r'What the repo does tell us is the timing. The file arrived '
@@ -76,8 +69,7 @@ return {
     ...para('--',
         r'The second line imports every file in lua/plugins/, this '
         r'one included. When two specs refer to the same plugin, '
-        r'lazy.nvim merges them: all-themes.lua’s own comment states '
-        r'the rule, “lazy merges specs by url”. The opts tables are '
+        r'lazy.nvim merges them by url. The opts tables are '
         r'merged key by key, which is why this file can contain only '
         r'the keys it wants to change and leave the rest of '
         r'LazyVim’s options alone. A file that wrote out the whole '
@@ -87,7 +79,7 @@ return {
     ...sec('one pattern, four files'),
     ...para('--',
         r'This is the template for how this config customises the '
-        r'tools it did not write. Four files in lua/plugins/ use it, '
+        r'tools it did not write. Four of the files in lua/plugins/ that use it are these, '
         r'each naming an existing plugin and changing a few opts:'),
     blank,
     cm('--', '  file                                  names             changes'),
@@ -114,10 +106,13 @@ return {
         r'decisions in the changelog share a preference for a quiet '
         r'editor (the update checker is off and unused providers are '
         r'disabled, 1.3.0), but those entries do not mention news, '
-        r'and I will not attribute this one to them.'),
+        r'and this page does not attribute this one to them.'),
     ...pt('--', 'a test',
-        r'there is nothing to verify beyond the editor not showing '
-        r'the pop-up, and the repo records no check of it.'),
+        r'there is one. tests/startup-and-options_spec.lua line 614 has '
+        r'a describe block for this plugin whose case, “turns both '
+        r'LazyVim news checks off”, asserts news.lazyvim and news.neovim '
+        r'are false both in the spec opts and in the merged '
+        r'lazyvim.config table, so the merge itself is verified.'),
     ...pt('--', 'a guard against renames',
         r'if a future LazyVim renamed the news option, this file '
         r'would stay valid Lua and silently stop doing anything. '

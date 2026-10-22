@@ -6,13 +6,13 @@ final Buffer page = makePage(
   lines: [
     cm('--', '──────────────────────────────────────────'),
     cm('--', 'init.lua — two lines that hand the editor to lazy.nvim'),
-    cm('--', 'the entire entry point, byte-identical to LazyVim’s starter'),
+    cm('--', 'the entire entry point, two lines'),
     cm('--', '──────────────────────────────────────────'),
     blank,
     kv('role', 'first file Neovim executes; delegates everything'),
     kv('language', 'Lua'),
     kv('size', '2 lines (one comment, one require)'),
-    kv('origin', 'LazyVim/starter, unchanged'),
+    kv('origin', 'LazyVim starter layout (CHANGELOG 1.0.0)'),
     kv('history', '2 commits: 6 lines at birth, 2 lines since 2026-09-02'),
 
     ...sec('what this file is'),
@@ -27,16 +27,11 @@ final Buffer page = makePage(
 -- bootstrap lazy.nvim, LazyVim and your plugins
 require("config.lazy")'''),
     ...para('--',
-        'The comment still says “your plugins” because it is the '
-        'starter’s wording. Compared with the last commit of '
-        'github.com/LazyVim/starter (803bc18, 2024-12-11) the '
-        'file is identical, as are stylua.toml, '
-        '.neoconf.json, .gitignore, LICENSE, lua/config/keymaps.lua '
-        'and lua/config/autocmds.lua. Only lua/config/lazy.lua and '
-        'lua/config/options.lua differ from the starter. Knowing '
-        'which files are stock is useful: the diff between this '
-        'repository and the starter is the real configuration, and '
-        'it is small.'),
+        'The comment still says “your plugins”. '
+        'The CHANGELOG says the 1.0.0 layout is '
+        'the LazyVim starter plus custom specs under lua/plugins/. '
+        'The starter itself is not vendored here, so this page does '
+        'not claim a byte-for-byte comparison with it.'),
 
     ...sec('what used to be here'),
     ...para('--',
@@ -63,7 +58,7 @@ require("config.lazy")'''),
         'mapleader to a space and maplocalleader to a backslash. '
         'The old config set both to a space.'),
     ...pt('--', 'options',
-        'lua/config/options.lua is still mine, but LazyVim '
+        'lua/config/options.lua is still this repository’s own file, but LazyVim '
         'requires it, not init.lua, and requires its own '
         'defaults file first so mine can override them.'),
     ...pt('--', 'keymaps',

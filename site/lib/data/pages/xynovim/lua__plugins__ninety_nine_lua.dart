@@ -11,8 +11,8 @@ final Buffer page = makePage(
     blank,
     kv('role', 'configures ThePrimeagen/99 to use the claude CLI, and binds its 11 keymaps'),
     kv('language', 'Lua (a lazy.nvim spec with a keys table and a config function)'),
-    kv('size', '79 lines: 60 of code, 17 of comment, 2 blank'),
-    kv('history', '5 commits since 2026-08-17, from a local clone to a lazy-loaded GitHub spec'),
+    kv('size', '283 lines (79 until 2026-10-09)'),
+    kv('history', '13 commits, 2026-08-17 to 2026-10-21 (the first two under lua/config/plugins/): a local clone, a lazy GitHub spec, then a guarded sandboxed provider'),
     kv('pinned', '99 at c174224 and blink.compat at 2ed6d9a in lazy-lock.json'),
     ...sec('why this file exists'),
     ...para('--',
@@ -48,11 +48,9 @@ return {
     ...para('--',
         r'Two dependencies come with the plugin. telescope.nvim powers '
         r'the model and provider pickers. blink.compat is there for '
-        r'completion in 99’s prompt buffer: 99’s completion source '
-        r'speaks the older nvim-cmp protocol, and blink.compat lets '
-        r'LazyVim’s blink.cmp engine consume it (the comment says only '
+        r'completion in 99’s prompt buffer; the comment says only '
         r'that blink.compat is “required by 99’s blink completion '
-        r'source”; the nvim-cmp detail is my gloss).'),
+        r'source”.'),
     blank,
     ...para('--',
         r'The keys table is the lazy-loading trigger. This config sets '
@@ -107,9 +105,13 @@ return {
         r'changed over the file’s life:'),
     ...code('lua', 'lua/plugins/ninety-nine.lua · provider and model', r'''
     _99.setup({
-      provider = _99.Providers.ClaudeCodeProvider,
+      provider = Guarded,
       model = "claude-sonnet-5",
       provider_extra_args = { "--effort", "medium" },'''),
+    ...pt('--', 'provider',
+        r'no longer the stock ClaudeCodeProvider. Since 625b48d '
+        r'(2026-10-09) it is Guarded, a metatable wrapper around that '
+        r'provider (see “the guarded provider” below).'),
     ...pt('--', 'model',
         r'the first commit (2026-08-17) used claude-sonnet-4-5. The '
         r'second commit that day bumped it to claude-sonnet-5.'),
@@ -201,8 +203,8 @@ return {
         -- type = "file" is required for path to take effect; without it the
         -- logger silently uses a void sink (the README example omits it).
         type = "file",
-        level = _99.DEBUG,
-        path = "/tmp/" .. vim.fs.basename(vim.uv.cwd() or "nvim") .. ".99.debug",
+        level = _99.INFO,
+        path = vim.fn.stdpath("state") .. "/99.log",
         print_on_error = true,
       },'''),
     ...para('--',
@@ -216,16 +218,15 @@ return {
         r'the answers were being written.'),
     blank,
     ...para('--',
-        r'Two details of the path expression are worth reading. It is '
-        r'computed once, when the config function runs. Because 99 is '
-        r'lazy-loaded, that is the first <leader>9 key press, so the '
-        r'log is named after the working directory at that moment and '
-        r'does not follow a later :cd. And the fallback "nvim" covers a nil '
-        r'current directory. The result is one log file per project '
-        r'name, in /tmp: /tmp/foo.99.debug for a project directory '
-        r'named foo. Two projects with the same directory name would '
-        r'share a log; that is a limitation of the scheme and is not '
-        r'addressed anywhere.'),
+        r'The path used to be computed from the working directory, as '
+        r'/tmp/<dirname>.99.debug at DEBUG level, so two projects with the '
+        r'same directory name shared a log. It now points at '
+        r'stdpath("state") .. "/99.log" at INFO: one stable file in '
+        r'Neovim’s state directory that survives reboots. The change '
+        r'is recorded in tests/agent-99-guard_spec.lua (“logs to '
+        r'stdpath(’state’)/99.log at INFO with print_on_error”) and a '
+        r'README-claims case that checks the path ~/.local/state/nvim/'
+        r'99.log.'),
     blank,
     ...para('--',
         r'display_errors and print_on_error are the other half of '
@@ -285,6 +286,272 @@ return {
         r'blink.compat is a dependency. This is the one setting in the '
         r'file that is pure comfort rather than a fix.'),
 
+    ...sec('the guarded provider'),
+    ...para('--',
+        r'Most of the file’s growth is one idea. 99 drives claude with '
+        r'--dangerously-skip-permissions, so a request can do anything '
+        r'the user can. The config therefore replaces the provider with a '
+        r'wrapper that adds guards. The comment at the top of the '
+        r'block names them: checkpoint the worktree as a git ref before '
+        r'every request, keep auto-save from writing the agent’s edits '
+        r'straight to disk while requests are in flight, and run claude '
+        r'inside bubblewrap.'),
+    ...code('lua', 'lua/plugins/ninety-nine.lua · lines 51-57', r'''
+    -- Safety wrapper around the stock Claude Code provider (see README
+    -- roadmap step 5): checkpoint the worktree as a git ref before every
+    -- request, keep auto-save from writing the agent's edits straight to disk
+    -- while requests are in flight, and run claude inside bubblewrap.
+    local Claude = _99.Providers.ClaudeCodeProvider
+    local Guarded = setmetatable({}, { __index = Claude })
+    local inflight, we_disabled_autosave = 0, false'''),
+    ...para('--',
+        r'Guarded is an empty table whose __index is the stock provider, '
+        r'so every method it does not override falls through. Only '
+        r'fetch_models, _build_command and make_request are replaced.'),
+    ...sec('auto-save off while the agent works'),
+    ...code('lua', 'lua/plugins/ninety-nine.lua · lines 59-89', r'''
+    -- One token per request; release() is idempotent so the counter drops
+    -- exactly once however the request ends (on_complete, sync throw, or a
+    -- cancel that never reaches on_complete).
+    local function acquire()
+      if inflight == 0 then
+        local ok, as = pcall(require, "auto-save")
+        we_disabled_autosave = ok and as.enabled() == true
+        if we_disabled_autosave then
+          as.off()
+        end
+      end
+      inflight = inflight + 1
+      return { done = false }
+    end
+
+    local function release(token)
+      if token.done then
+        return
+      end
+      token.done = true
+      inflight = math.max(0, inflight - 1)
+      if inflight == 0 and we_disabled_autosave then
+        we_disabled_autosave = false
+        -- Only undo our own change: if the user switched auto-save back on
+        -- meanwhile, there is nothing to restore.
+        local ok, as = pcall(require, "auto-save")
+        if ok and as.enabled() ~= true then
+          as.on()
+        end
+      end
+    end'''),
+    ...para('--',
+        r'This is a reference count with an owner flag. The first request '
+        r'turns auto-save off, remembering whether it was on; later '
+        r'requests only increment. When the last one releases, auto-save '
+        r'comes back only if this code turned it off and nobody has '
+        r'switched it on in the meantime. The token makes release '
+        r'idempotent, which matters because a request can end three ways '
+        r'(on_complete, a synchronous throw, or a cancel that never reaches '
+        r'on_complete). The reason for the whole mechanism is the '
+        r'auto-save page: an autosave a second after the agent edits a '
+        r'file would write the agent’s half-finished work to disk. '
+        r'tests/agent-99-guard_spec.lua has cases for it, '
+        r'among them “a duplicate completion after cancel does not '
+        r'double-decrement” and “does not touch auto-save the user '
+        r'switched on meanwhile”.'),
+    ...sec('fail closed, then checkpoint, then start'),
+    ...code('lua', 'lua/plugins/ninety-nine.lua · lines 112-134', r'''
+    function Guarded.make_request(self, query, context, observer)
+      -- Fail closed before anything else happens (no snapshot, no auto-save
+      -- toggle, no process): claude runs with --dangerously-skip-permissions.
+      local st = require("config.agent_sandbox").status()
+      if st.mode == "refused" then
+        local msg = "99 refused to start: "
+          .. st.reason
+          .. ". The agent only runs sandboxed (Linux with bubblewrap, or WSL2 with bubblewrap). To run it anyway"
+          .. " set vim.g.xynovim_99_allow_unsandboxed = true: claude --dangerously-skip-permissions then runs"
+          .. " with your full privileges."
+        vim.notify(msg, vim.log.levels.ERROR)
+        pcall(observer.on_start)
+        pcall(observer.on_complete, "failed", msg)
+        return nil
+      elseif st.mode == "unsandboxed" then
+        vim.notify(
+          "99 runs claude --dangerously-skip-permissions WITHOUT a sandbox ("
+            .. st.reason
+            .. "): the whole filesystem, your credentials and the network are reachable.",
+          vim.log.levels.WARN
+        )
+      end'''),
+    ...para('--',
+        r'440d781 (2026-10-16, “Agent sandbox fails closed when no sandbox '
+        r'backend is available”) added this gate. config.agent_sandbox '
+        r'reports a mode: a working backend, unsandboxed (only through an '
+        r'explicit opt-in), or refused. When refused, the request never '
+        r'starts: the observer is told it started and failed, so the 99 UI '
+        r'does not hang, and the message names the opt-in variable. The '
+        r'ordering is stated in the comment: nothing happens first, no '
+        r'snapshot, no auto-save toggle, no process. See the page for '
+        r'lua/config/agent_sandbox.lua for the sandbox itself, and the '
+        r'standalone xyno-sandbox.nvim plugin (xyno_sandbox/init.lua and '
+        r'run.lua), which holds the same idea as a reusable module.'),
+    ...code('lua', 'lua/plugins/ninety-nine.lua · lines 167-181', r'''
+      -- The agent must not start before the checkpoint holds the pre-request
+      -- state (a fast agent rewrote files while the snapshot was still
+      -- reading them): start from the snapshot's `done`, or after 15 s.
+      local path = vim.api.nvim_buf_get_name(0)
+      if path ~= "" and vim.fs.root(path, ".git") then
+        vim.defer_fn(start, 15000)
+        require("config.local_history").snapshot({
+          path = path,
+          force = true,
+          label = "before 99 request",
+          done = start,
+        })
+      else
+        start()
+      end
+      return result'''),
+    ...para('--',
+        r'The checkpoint is a call into the local history module (the '
+        r'config.local_history page): a forced snapshot labelled “before '
+        r'99 request”. The agent starts from the snapshot’s done callback. '
+        r'The fallback timer of 15 seconds came in 98c9bb4 after a field '
+        r'finding recorded in the comment: a fast agent rewrote files '
+        r'while the snapshot was still reading them, so starting '
+        r'in parallel was wrong. start() is guarded by a started flag and '
+        r'by token.done, so whichever of the callback and the timer fires '
+        r'second does nothing, and a cancel before the checkpoint is '
+        r'finished never starts the agent.'),
+    ...sec('wrapping the command, and the model list'),
+    ...code('lua', 'lua/plugins/ninety-nine.lua · lines 91-110', r'''
+    -- The Claude provider's model list is static (the CLI cannot list models)
+    -- and predates claude-sonnet-5, the model set below.
+    function Guarded.fetch_models(callback)
+      Claude.fetch_models(function(models, err)
+        if models then
+          table.insert(models, 1, "claude-sonnet-5")
+        end
+        callback(models, err)
+      end)
+    end
+
+    function Guarded._build_command(self, query, context)
+      local cmd = Claude._build_command(self, query, context)
+      local project = vim.fs.root(0, ".git") or vim.uv.cwd()
+      local wrapped, err = require("config.agent_sandbox").wrap(cmd, project, tmp_dir)
+      if not wrapped then
+        error("99 sandbox: " .. tostring(err), 0)
+      end
+      return wrapped
+    end'''),
+    ...para('--',
+        r'fetch_models prepends the model the config uses to the static '
+        r'list so the <leader>9m picker shows it (99acd7e). _build_command '
+        r'takes the command the stock provider would run and passes it, '
+        r'with the project root (git root or cwd) and the temp directory, to '
+        r'agent_sandbox.wrap, which returns the bubblewrap command line or '
+        r'nil plus a reason. A nil result is raised as an error, again '
+        r'failing closed. Tests assert that the command starts with bwrap, '
+        r'ends with claude, drops GITHUB_TOKEN, and, in a real run, that the '
+        r'token is actually invisible to the wrapped process.'),
+    ...sec('the provider picker cannot bypass the guard'),
+    ...code('lua', 'lua/plugins/ninety-nine.lua · lines 213-226', r'''
+    -- The <leader>9P picker (and anything else) swaps the provider with
+    -- _99.set_provider. The stock providers of the other CLIs run with no
+    -- sandbox, no checkpoint and no auto-save guard, so only the guarded
+    -- provider may be selected unless the sandbox was switched off explicitly.
+    local set_provider = _99.set_provider
+    -- allow_unsandboxed only counts when no backend exists (status().via);
+    -- with a working bwrap only sandbox = false opts out.
+    local function allowed(provider)
+      if provider == Guarded or vim.g.xynovim_99_sandbox == false then
+        return true
+      end
+      local st = require("config.agent_sandbox").status()
+      return st.mode == "unsandboxed" and st.via == "allow_unsandboxed"
+    end'''),
+    ...para('--',
+        r'a2e0d5a and af6ca87 (both 2026-10-21, “Cross-platform: review '
+        r'fixes”) closed a hole. 99 ships providers for other CLIs, and '
+        r'the <leader>9P picker could select any of them, which would run '
+        r'with no sandbox, checkpoint or auto-save guard. set_provider is '
+        r'now overridden: only Guarded is accepted, unless the sandbox '
+        r'was switched off with vim.g.xynovim_99_sandbox = false, or no '
+        r'backend exists and vim.g.xynovim_99_allow_unsandboxed = true. '
+        r'The comment spells out a subtle rule: allow_unsandboxed only '
+        r'counts when no backend exists, so with a working bubblewrap only '
+        r'sandbox = false opts out.'),
+    ...code('lua', 'lua/plugins/ninety-nine.lua · lines 227-258', r'''
+    -- The opt-in is re-checked on EVERY request, not only at selection: a
+    -- provider chosen under it must not keep running once it is revoked, and
+    -- each unsandboxed request warns.
+    local proxies = {}
+    local function checked(provider)
+      if provider == Guarded or provider == nil then
+        return provider
+      end
+      if not proxies[provider] then
+        proxies[provider] = setmetatable({
+          _xyno_inner = provider,
+          make_request = function(self, query, context, observer)
+            if not allowed(provider) then
+              local msg = "99 refused to start: this provider runs without the sandbox, checkpoint and auto-save"
+                .. " guard, and the opt-in (vim.g.xynovim_99_sandbox = false or vim.g.xynovim_99_allow_unsandboxed"
+                .. " = true) is not set any more. Select the Claude Code provider (<leader>9P)."
+              vim.notify(msg, vim.log.levels.ERROR)
+              pcall(observer.on_start)
+              pcall(observer.on_complete, "failed", msg)
+              return nil
+            end
+            vim.notify(
+              "99 runs this provider WITHOUT a sandbox, checkpoint or auto-save guard: the whole filesystem,"
+                .. " your credentials and the network are reachable.",
+              vim.log.levels.WARN
+            )
+            return provider.make_request(self, query, context, observer)
+          end,
+        }, { __index = provider })
+      end
+      return proxies[provider]
+    end'''),
+    ...para('--',
+        r'Checking at selection time is not enough: a user could select '
+        r'another provider under the opt-in, later revoke it, and the '
+        r'selection would still be live. So any non-guarded provider is '
+        r'wrapped in a cached proxy that re-checks allowed() on every '
+        r'make_request, fails with the same observer protocol as above, '
+        r'and warns on every unsandboxed run. The proxies table is keyed '
+        r'by provider so repeated selections reuse one proxy.'),
+    ...code('lua', 'lua/plugins/ninety-nine.lua · lines 259-281', r'''
+    function _99.set_provider(provider)
+      if not allowed(provider) then
+        vim.notify(
+          "99: only the guarded Claude Code provider can be selected (the other providers run without the"
+            .. " sandbox, checkpoint and auto-save guard). Set vim.g.xynovim_99_sandbox = false or"
+            .. " vim.g.xynovim_99_allow_unsandboxed = true to allow them.",
+          vim.log.levels.ERROR
+        )
+        return _99
+      end
+      return set_provider(checked(provider))
+    end
+    -- the picker announces "Provider set" after its call: skip that when refused
+    local pickers = require("99.extensions.pickers")
+    local on_selected = pickers.on_provider_selected
+    function pickers.on_provider_selected(name, lookup)
+      local provider = lookup[name]
+      if provider and not allowed(provider) then
+        _99.set_provider(provider) -- prints the refusal
+        return
+      end
+      return on_selected(name, lookup)
+    end'''),
+    ...para('--',
+        r'The last override patches the picker’s own callback. Without '
+        r'it the picker would print “Provider set” after set_provider '
+        r'had refused, which is a lie; with it a refusal prints exactly '
+        r'one message. tests/agent-failclosed_spec.lua checks the 99 '
+        r'provider is guarded and that make_request refuses where no '
+        r'sandbox exists; its other cases cover that only the two '
+        r'explicit booleans lead to an unsandboxed run.'),
     ...sec('how it grew'),
     cm('--', '  2026-08-17  1c496fd  a local clone (dir = "~/personal/99"),'),
     cm('--', '                       model claude-sonnet-4-5, 5 keymaps'),
@@ -295,6 +562,12 @@ return {
     cm('--', '                       display_errors, blink completion,'),
     cm('--', '                       and the newer keymaps (v, o, l, c, w, W)'),
     cm('--', '  2026-09-03  f35b4f6  keymaps moved into lazy keys; pruning'),
+    cm('--', '  2026-10-09  625b48d  Guarded provider, snapshot, auto-save token'),
+    cm('--', '  2026-10-12  0494b52  idempotent acquire/release, cancel handling'),
+    cm('--', '  2026-10-13  99acd7e  fetch_models adds claude-sonnet-5'),
+    cm('--', '  2026-10-13  98c9bb4  15 s start timer behind the snapshot'),
+    cm('--', '  2026-10-16  440d781  fail closed without a sandbox backend'),
+    cm('--', '  2026-10-21  a2e0d5a  provider picker guarded (af6ca87 follow-up)'),
     blank,
     ...para('--',
         r'The move from a local clone to a GitHub spec in 1.0.0 is a '
@@ -318,25 +591,32 @@ return {
         r'bundle of changes that includes this one (1.3.0).'),
     blank,
     ...para('--',
-        r'There is no automated test in the repository for any of '
-        r'this. The verification is manual, described in the '
-        r'changelog, and was done against the real plugin and the '
-        r'real claude CLI. That is the honest status.'),
+        r'The first versions were verified by hand, as the changelog '
+        r'describes. That is no longer the whole story: '
+        r'tests/agent-99-guard_spec.lua covers lazy loading, the eleven '
+        r'keys (each asserted to call the right function with the right '
+        r'description), the absolute tmp_dir, the 7-day prune, the setup '
+        r'arguments, fetch_models, command wrapping, make_request, the '
+        r'auto-save token and the logger, and tests/agent-failclosed_spec.lua covers the refusal '
+        r'paths.'),
 
     ...sec('limits'),
     ...pt('--', 'permissions',
-        r'the provider passes --dangerously-skip-permissions. The '
-        r'assumption is that you trust the model and the prompt. The '
-        r'config cannot change that.'),
-    ...pt('--', 'one log per directory name',
-        r'two projects named alike share /tmp/<name>.99.debug, and the '
-        r'path is fixed when 99 first loads, as above.'),
+        r'the provider still passes --dangerously-skip-permissions. What '
+        r'changed is the sandbox around it. With the opt-in variables '
+        r'set, it runs with the user’s full privileges, and the config '
+        r'says so in every warning.'),
     ...pt('--', 'the model is hard-coded',
         r'claude-sonnet-5 is a string in the file; it has already '
         r'changed once (from claude-sonnet-4-5).'),
     ...pt('--', 'pruning is silent',
         r'there is no log line when files are deleted, and only plain '
         r'files in the top level of the directory are considered.'),
+    ...pt('--', 'monkey-patching a plugin',
+        r'set_provider and pickers.on_provider_selected are replaced '
+        r'in place. An update to 99 that renames either would let the '
+        r'guard fall away, which is the failure mode of this design; the '
+        r'spec tests are the early warning.'),
     ...pt('--', 'tied to a plugin API',
         r'the Extensions.Worker keys and the logger options exist in '
         r'the version the lock file pins. A plugin update may change '
@@ -350,7 +630,7 @@ return {
         r'configuration file into a list of things that once went '
         r'wrong and are now impossible.'),
     blank,
-    link('→ github.com/XNash/xynovim', 'https://github.com/XNash/xynovim'),
+    link('→ github.com/xynorash/xynovim', 'https://github.com/xynorash/xynovim'),
     link('→ github.com/ThePrimeagen/99', 'https://github.com/ThePrimeagen/99'),
   ],
 );

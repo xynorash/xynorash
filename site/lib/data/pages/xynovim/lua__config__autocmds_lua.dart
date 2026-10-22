@@ -6,13 +6,13 @@ final Buffer page = makePage(
   lines: [
     cm('--', '──────────────────────────────────────────'),
     cm('--', 'autocmds.lua — the empty hook, and where autocmds went instead'),
-    cm('--', 'eight lines of comments; three real autocmds live elsewhere'),
+    cm('--', 'eight lines of comments; the real autocmds live next to their features'),
     cm('--', '──────────────────────────────────────────'),
     blank,
     kv('role', 'hook where LazyVim loads user autocmds'),
     kv('language', 'Lua'),
     kv('size', '8 lines, all comments'),
-    kv('origin', 'LazyVim/starter, unchanged'),
+    kv('origin', 'LazyVim starter layout, added in the 1.0.0 migration'),
     kv('history', 'added in eabb22a (2026-09-02); never edited'),
 
     ...sec('what is in the file'),
@@ -81,39 +81,38 @@ final Buffer page = makePage(
 
     ...sec('where this repository puts its own autocmds'),
     ...para('--',
-        'A search for nvim_create_autocmd finds three places, all '
-        'of them next to the feature they serve and none of them '
-        'here:'),
+        'A search for nvim_create_autocmd now finds the calls in 17 files '
+        'under lua, plugin and after, and this file contains none of them. '
+        'Each sits next to the feature it serves. The heaviest users are '
+        'lua/config/macro_tools.lua and lua/config/disk_guard.lua (six '
+        'each), then rust_restart.lua and crate_add.lua (five), lsp_status.lua '
+        'and import_engine.lua (four), and three each in ux.lua and '
+        'local_history.lua. The older examples are still the clearest:'),
     ...pt('--', 'lua/plugins/auto-save.lua',
         'a User autocmd on AutoSaveWritePost in the group '
-        'user_autosave_didsave, which re-sends '
-        'textDocument/didSave to language servers after a '
-        'noautocmd write.'),
+        'user_autosave_didsave, which re-sends textDocument/didSave to '
+        'language servers after a noautocmd write.'),
     ...pt('--', 'plugin/after/transparency.lua',
         'a ColorScheme autocmd in the group user_transparency, so '
         'transparency is re-applied after any :colorscheme.'),
-    ...pt('--', 'lua/plugins/omarchy-theme-hotreload.lua',
-        'a User autocmd on LazyReload that drives the live theme '
-        'switch. It is the only one of the three without an '
-        'augroup.'),
+    ...pt('--', 'lua/config/keymaps.lua',
+        'an LspAttach autocmd in the group xynovim_rust_keymaps that binds '
+        'the <leader>r Rust maps per buffer.'),
     ...para('--',
-        'Two conventions show. The groups are prefixed user_ the '
-        'way LazyVim’s are prefixed lazyvim_, and both are created '
-        'with clear = true, so executing the code twice replaces '
-        'the autocmd instead of stacking a second copy. That '
-        'matters here: the transparency file’s own header says '
-        'that the Omarchy hot-reload re-sources it, “which is '
-        'safe: the augroup clears its old autocmd”.'),
+        'The omarchy-theme-hotreload plugin that this page used to list '
+        'was deleted on 2026-10-13 (e874f9f).'),
     ...para('--',
-        'Why not put them in this file? Because each of them has a '
-        'lifetime tied to something else. The didSave hook is '
-        'only meaningful while auto-save is configured, so it is '
-        'registered inside that plugin’s config function and '
-        'exists exactly when the plugin does. Transparency has to '
-        'be in place at startup and has to be re-sourceable '
-        'without reloading the editor. A VeryLazy file would '
-        'register them later than needed and away from the code '
-        'whose behaviour they change.'),
+        'Two conventions show. The groups are named by the repository '
+        '(user_ and xynovim_ prefixes, the way LazyVim’s are prefixed '
+        'lazyvim_) and created with clear = true, so executing the code '
+        'twice replaces the autocmd instead of stacking a second copy.'),
+    ...para('--',
+        'Why not put them in this file? Because each has a lifetime tied '
+        'to something else. The didSave hook is only meaningful while '
+        'auto-save is configured, so it is registered inside that '
+        'plugin’s config function. Transparency has to be in place at '
+        'startup. A VeryLazy file would register them later than needed '
+        'and away from the code whose behaviour they change.'),
 
     ...sec('an interaction worth knowing'),
     ...para('--',
@@ -137,10 +136,10 @@ final Buffer page = makePage(
         'commit that lazy-lock.json pins and will drift when that '
         'pin moves.'),
     ...pt('--', 'unclear ownership',
-        'with autocmds split across three plugin files there is '
+        'with autocmds split across seventeen files there is '
         'no single place to list them; a grep is the index.'),
 
     blank,
-    link('→ github.com/XNash/xynovim', 'https://github.com/XNash/xynovim'),
+    link('→ github.com/xynorash/xynovim', 'https://github.com/xynorash/xynovim'),
   ],
 );

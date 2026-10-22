@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:xnash_portfolio/data/interim_pages.dart';
 import 'package:xnash_portfolio/data/projects.dart';
 
 void main() {
@@ -51,10 +50,7 @@ void main() {
   });
 
   test('every project page has a banner and an outline', () {
-    // (temporary placeholders are exempt until real pages replace them)
-    final interim = {for (final b in kInterimPages) b.fullPath};
-    for (final b in kBuffers
-        .where((b) => b.project != null && !interim.contains(b.fullPath))) {
+    for (final b in kBuffers.where((b) => b.project != null)) {
       expect(b.lines.length, greaterThan(10), reason: b.fullPath);
       expect(b.outline, isNotEmpty, reason: b.fullPath);
     }

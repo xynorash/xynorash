@@ -11,8 +11,8 @@ final Buffer page = makePage(
     blank,
     kv('role', 'overrides rust-analyzer’s settings inside LazyVim’s lang.rust extra'),
     kv('language', 'Lua (a lazy.nvim spec that overrides mrcjkb/rustaceanvim opts)'),
-    kv('size', '38 lines: 26 of code, 12 of comment'),
-    kv('history', '3 commits: 2026-09-02, then twice on 2026-09-03 (07:05 and 19:54)'),
+    kv('size', '114 lines (38 until 2026-10-09)'),
+    kv('history', '9 commits: eabb22a (2026-09-02) to 0247401 (2026-10-22)'),
     kv('measured', 'instant tier 155-235 ms warm; clippy tier 0.56 s median warm'),
     ...sec('why this file exists'),
     ...para('--',
@@ -159,12 +159,11 @@ return {
         r'and “why is cargo waiting?” is the first question to ask. '
         r'The trade-off is disk and first-run time, since the second '
         r'directory builds its own copy of whatever rust-analyzer '
-        r'needs. The notes do not quantify that cost, so that part is '
-        r'my inference.'),
+        r'needs. The notes do not quantify that cost.'),
 
     ...sec('inlay hints'),
     ...code('lua', 'lua/plugins/rustaceanvim.lua · inlayHints', r'''
-          -- RustRover-style inline type/lifetime annotations.
+          -- Inline type/lifetime annotations (inspired by JetBrains' inlay hints).
           inlayHints = {
             closureReturnTypeHints = { enable = "with_block" },
             lifetimeElisionHints = { enable = "skip_trivial", useParameterNames = true },
@@ -182,9 +181,8 @@ return {
         r'every one-liner closure too.'),
     ...pt('--', 'lifetimeElisionHints = "skip_trivial"',
         r'show the lifetimes the compiler infers, but skip the '
-        r'trivial cases. useParameterNames = true prefers parameter '
-        r'names over numbered placeholders (my reading of the '
-        r'rust-analyzer option).'),
+        r'trivial cases. useParameterNames = true is also set; the '
+        r'repo does not explain it.'),
     ...pt('--', 'expressionAdjustmentHints = "never"',
         r'implicit adjustments such as automatic borrows and '
         r'derefs are not drawn. The notes record no reason; the '
@@ -198,7 +196,7 @@ return {
         r'is not decided here either: the older config had an '
         r'LspAttach autocmd turning them on for every client that '
         r'supports them, and lua/config/autocmds.lua has no such '
-        r'autocmd now, so I infer that the switch is left to LazyVim.'),
+        r'autocmd now, so the switch is evidently left to LazyVim.'),
 
     ...sec('imports and completion'),
     ...code('lua', 'lua/plugins/rustaceanvim.lua · imports, completion', r'''
@@ -216,10 +214,8 @@ return {
         r'imports per module instead of adding one line each. '
         r'CHANGELOG 1.0.0 calls this “module-grouped auto-imports”.'),
     ...pt('--', 'imports.prefix = "self"',
-        r'the form of the inserted paths: module-relative, with a '
-        r'self:: prefix where the path starts with a module. This is '
-        r'my reading of the rust-analyzer option, not a claim '
-        r'the repo documents.'),
+        r'controls the form of the inserted paths; the repo does '
+        r'not document what "self" does here.'),
     ...pt('--', 'completion.callable.snippets = "fill_arguments"',
         r'accepting a completion for a function inserts the call with '
         r'its arguments as tab-stops, “fill-arguments completion '
@@ -234,6 +230,123 @@ return {
         r'survived all three versions of the file, which is a fair '
         r'sign that they are preferences and not workarounds.'),
 
+    ...sec('October: init, hooks and a resource budget'),
+    ...para('--',
+        r'The file tripled. The new lines fall in four groups, each with '
+        r'a comment that states the failure it fixes.'),
+    ...code('lua', 'lua/plugins/rustaceanvim.lua · lines 1-18', r'''
+return {
+  "mrcjkb/rustaceanvim",
+  -- nvim-dap is lazy-loaded, and rustaceanvim only advertises the
+  -- `rust-analyzer.debugSingle` client command (the "Debug" codelens) when
+  -- dap is already loaded as the client is created, so load it first.
+  dependencies = { "mfussenegger/nvim-dap" },
+  init = function()
+    -- rustaceanvim's workspaceSymbol prompt (<leader>rw / rW) calls
+    -- vim.npcall, which moved to vim.F.npcall in nvim 0.12.
+    vim.npcall = vim.npcall or vim.F.npcall
+    -- Upstream default: every rust-analyzer attach runs `cargo test --no-run
+    -- --all-targets` to build the debuggables list (measured: up to 5 at
+    -- once, fighting your own cargo for the build lock). <leader>dr / dR
+    -- and :RustLsp debuggables ask rust-analyzer on demand instead. Set in
+    -- init because LazyVim's rust extra overwrites `opts.dap`.
+    vim.g.rustaceanvim = vim.tbl_deep_extend("force", vim.g.rustaceanvim or {}, {
+      dap = { autoload_configurations = false },
+    })'''),
+    ...pt('--', 'the nvim-dap dependency (be73b6c)',
+        r'nvim-dap is lazy-loaded, and rustaceanvim only advertises the '
+        r'rust-analyzer.debugSingle client command (the Debug codelens) '
+        r'when dap is already loaded as the client is created, so it is '
+        r'declared as a dependency. The spec test “the debugSingle client '
+        r'command is advertised to the server (dap was loaded before the '
+        r'client)” is the proof.'),
+    ...pt('--', 'vim.npcall (8779a6e, 2026-10-12)',
+        r'rustaceanvim’s workspaceSymbol prompt (<leader>rw and rW) calls '
+        r'vim.npcall, which moved to vim.F.npcall in Neovim 0.12. A shim '
+        r'line restores the old name. The commit is the “Batch 2: keys '
+        r'that did nothing” one.'),
+    ...pt('--', 'autoload_configurations = false (be73b6c)',
+        r'upstream runs cargo test --no-run --all-targets on every attach '
+        r'to build the debuggables list; the comment says it was measured '
+        r'at up to five at once, fighting your own cargo for the build '
+        r'lock. Debugging now asks rust-analyzer on demand. It is set in '
+        r'init because LazyVim’s rust extra overwrites opts.dap. A real-nvim '
+        r'case asserts no such cargo child exists after attach.'),
+    ...code('lua', 'lua/plugins/rustaceanvim.lua · lines 19-28', r'''
+    -- LazyVim's `*` server config advertises workspace.fileOperations.willRename
+    -- to every client. With it rust-analyzer answers a module rename
+    -- (`vim.lsp.buf.rename`) with the file rename ALONE and expects the client
+    -- to send workspace/willRenameFiles, which nvim does not do for the
+    -- RenameFile of a workspace edit: `pub mod util;` and every `util::` path
+    -- stayed behind. Without the capability the response carries those edits
+    -- too. (<leader>cR still asks willRenameFiles itself, see keymaps.lua.)
+    vim.lsp.config("rust-analyzer", {
+      capabilities = { workspace = { fileOperations = { willRename = false } } },
+    })'''),
+    ...para('--',
+        r'98c9bb4 (2026-10-13) fixes a subtle rename bug. With willRename '
+        r'advertised, renaming a module returned only the file rename and '
+        r'left pub mod util; and every util:: path behind. Turning the '
+        r'capability off for rust-analyzer makes the response carry the '
+        r'text edits as well. The spec case 21 renames a module through '
+        r'LSP and checks that the mod line and the paths change, not only '
+        r'the file.'),
+    ...code('lua', 'lua/plugins/rustaceanvim.lua · lines 30-49', r'''
+  opts = {
+    server = {
+      -- A crashed server is restarted (rust_restart.lua).
+      on_exit = function(...)
+        return require("config.rust_restart").on_exit("rust-analyzer")(...)
+      end,
+      -- Layer the per-project Cargo context (:RustContext) over the defaults.
+      settings = function(root, default_settings)
+        local settings = require("rustaceanvim.config.server").load_rust_analyzer_settings(
+          root,
+          { default_settings = vim.deepcopy(default_settings) }
+        )
+        local ctx = require("config.rust_context")
+        local cargo = ctx.ra_cargo(ctx.get(ctx.root(root and (root .. "/x"))))
+        if cargo then
+          local ra = settings["rust-analyzer"]
+          ra.cargo = vim.tbl_extend("force", ra.cargo or {}, cargo)
+        end
+        return settings
+      end,'''),
+    ...para('--',
+        r'on_exit hands a crashed server to config.rust_restart (be73b6c), '
+        r'the same supervisor that bacon-ls uses. settings becomes a '
+        r'function (f5936dc): it loads the project’s own rust-analyzer '
+        r'settings, deep-copies the defaults, and then overlays the cargo '
+        r'part of the :RustContext chosen for that root (features, target). '
+        r'This is the second half of the “both tiers see the same '
+        r'context” promise made in bacon-ls.lua’s before_init.'),
+    ...code('lua', 'lua/plugins/rustaceanvim.lua · lines 102-109', r'''
+          -- Find usages (`gr`, call hierarchy): drop `use` lines and test
+          -- code. Toggle tests back in live with <leader>rT (keymaps.lua).
+          references = { excludeImports = true, excludeTests = true },
+          -- Resource budget (16 cores / 15 GiB box): cap the main loop and
+          -- the startup cache priming instead of "all cores". Do NOT turn
+          -- procMacro.attributes off: it breaks tokio::main / axum.
+          numThreads = 8,
+          cachePriming = { numThreads = 4 },'''),
+    ...para('--',
+        r'031f895 (2026-10-09) added references filtering, term search for '
+        r'completion, the nine postfix snippets (ok, err, some, pinbox, arc, '
+        r'rc, refcell, mutex, arcmutex; the comment notes the custom map '
+        r'replaces rust-analyzer’s defaults, so the defaults are repeated) '
+        r'and the thread budget. The comment names the machine (16 cores, '
+        r'15 GiB) and a rule learned the hard way: never switch '
+        r'procMacro.attributes off, it breaks tokio::main and axum. The '
+        r'spec asserts exactly nine snippets, asserts '
+        r'diagnostics.experimental is off and procMacro.attributes on, and '
+        r'checks that every default_settings key exists in the installed '
+        r'binary’s config schema, so a typo cannot silently do nothing.'),
+    ...para('--',
+        r'0247401 (2026-10-22, “Positioning: a personal project inspired '
+        r'by JetBrains, not a competitor”) reworded the inlay-hint comment '
+        r'from a RustRover reference to “inspired by JetBrains’ inlay '
+        r'hints”; no setting changed.'),
+
     ...sec('what lives outside this file'),
     ...para('--',
         r'Two Rust build-speed settings are not in this repo at all. '
@@ -241,14 +354,15 @@ return {
         r'because they live in ~/.cargo/config.toml:'),
     ...pt('--', 'mold via clang',
         r'a faster linker. The changelog says linking was verified '
-        r'with readelf, and the README says it links “several times '
+        r'with readelf, and docs/DETAILS.md says it links “several times '
         r'faster”, benefiting every clippy, test and run cycle.'),
     ...pt('--', 'profile.dev.debug = "line-tables-only"',
-        r'backtraces keep file and line, but the heavyweight '
-        r'debuginfo is not generated. Existing projects full-rebuild '
-        r'once after this change. The README’s caution matters for '
-        r'anyone using the codelldb debugger from the extra: set full '
-        r'debug info per project when you need it.'),
+        r'this was the value in CHANGELOG 1.3.0, which notes that existing '
+        r'projects full-rebuild once after the change. A later CHANGELOG '
+        r'entry (the one adding dap.lua) switched it to '
+        r'profile.dev.debug = true, because only full debuginfo shows '
+        r'locals in codelldb, at about +14% on a clean build and about '
+        r'+28% on target.'),
     blank,
     ...para('--',
         r'They belong on this page because they act on the same loop, '
@@ -264,9 +378,7 @@ return {
         r'this file the claims are:'),
     ...pt('--', 'instant tier',
         r'measured at 155-235 ms warm with real keystrokes and '
-        r'clean-state probes (1.3.0). My reading of “clean-state” is a '
-        r'probe that starts with no diagnostics showing, so the first '
-        r'one to appear is attributable to the edit.'),
+        r'clean-state probes (1.3.0). The changelog does not define “clean-state”.'),
     ...pt('--', 'no pipeline duplicated',
         r'checkOnSave remains off (1.3.0), so the sub-second clippy '
         r'numbers on the bacon-ls page still hold after the instant '
@@ -298,9 +410,9 @@ return {
         r'settings. Every setting is the answer to a question the '
         r'notes pose: which tool is cheapest for this kind of '
         r'feedback, and who else is contending for the same resource. '
-        r'The file ended a line shorter than it began while the '
-        r'measured behaviour improved.'),
+        r'The f35b4f6 version was a line shorter than the 39-line '
+        r'first version while the measured behaviour improved.'),
     blank,
-    link('→ github.com/XNash/xynovim', 'https://github.com/XNash/xynovim'),
+    link('→ github.com/xynorash/xynovim', 'https://github.com/xynorash/xynovim'),
   ],
 );

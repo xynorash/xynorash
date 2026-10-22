@@ -4,226 +4,140 @@ import '../../authoring.dart';
 final Buffer page = makePage(
   'xynovim/CHANGELOG.md',
   lines: [
-    heading('# CHANGELOG.md'),
+    heading('# Changelog'),
     blank,
-    ...text('The longest file in the repository, and the one that '
-        'holds the evidence. It runs to 478 lines and about 3,900 '
-        'words, against 759 lines of Lua for the whole '
-        'configuration. Almost every number in the README (5.6 s '
-        'down to 0.9 s, 28.7 ms down to about 18 ms, a median of '
-        '0.56 s) is first written down here, together with what '
-        'was measured, on what, and how the result was checked. '
-        'It is not a list of release notes. It is the lab notebook '
-        'of a configuration that was debugged like a program.'),
+    ...text('CHANGELOG.md is 956 lines long and records, for every change to the configuration, what was wrong, what was measured and how the fix was checked. It is more than twice as long as the README (442 lines), and the shorter documents (README, docs/DETAILS.md, docs/KNOWN_ISSUES.md) repeat many of its facts in condensed form. This page reads it from the top: the unreleased work of 2026-10-22 first, then the numbered releases down to 0.1.0 on 2026-08-17.'),
     blank,
-    kv('role', 'history of the config and the evidence behind it'),
-    kv('format', 'Markdown, newest section first, 9 headed sections'),
-    kv('size', '478 lines, about 3,900 words, 30 KB'),
-    kv('versions', '0.1.0 to 1.4.1; no git tags exist, headings only'),
-    kv('span', '2026-08-17 to 2026-09-04, edited by 17 commits'),
-    kv('habit', '17 of the repo’s 20 non-merge commits touch it'),
+    kv('role', 'chronological record of changes, newest first'),
+    kv('language', 'Markdown, Keep a Changelog layout with sections Added, Changed, Fixed, Removed'),
+    kv('size', '956 lines, 12 numbered sections plus an Unreleased block and a pre-1.0 Windows lineage'),
+    kv('span', '2026-08-17 (0.1.0) to 2026-10-22 (Unreleased)'),
+    kv('releases', '1.8.0 (2026-10-13), 1.7.0, 1.6.0 (2026-10-12), 1.5.0 (2026-10-09), 1.4.x, 1.3.0, 1.2.0, 1.1.0, 1.0.0 (2026-09-02), 0.2.0, 0.1.0'),
+    blank,
+    ...sec('how the file is organised'),
+    ...text('The header is two lines and a promise. The format is the one from keepachangelog.com, but the content departs from it in a useful way: entries are not one-liners. A typical entry names the symptom, the root cause, the fix, the measurement and what was not verified. That habit is visible from the very first lines.'),
+    ...code('markdown', r'CHANGELOG.md · lines 1-5', r'''
+# Changelog
 
-    ...sec('why a configuration keeps a changelog this long'),
-    ...text('The README says it in one sentence: “Every notable '
-        'change is documented in CHANGELOG.md, including what was '
-        'verified and how.” The second half of that sentence is '
-        'the unusual part. A typical changelog says what changed. '
-        'This one says what was true before, why, what was done, '
-        'and what test showed the change had worked. The word '
-        '“verified” appears 25 times in it, “measured” four '
-        'times, and “root cause” in one spelling or another five '
-        'times.'),
-    ...text('The habit is also visible in the git history. Of the '
-        '27 commits in the repository, 7 are merges of pull '
-        'requests. Of the other 20, 17 edit this file in the same '
-        'commit as the change they describe. The three that do '
-        'not are the initial commit (the file did not exist yet), '
-        'the one-line rename to xynovim (5e60f65) and a README '
-        'tweak (9fff81e). So there is no gap between code and '
-        'record: if a behaviour changed, the explanation was '
-        'written in the same breath.'),
-    ...text('The same duplication shows up in the Lua. The comment '
-        'above updateOnInsertDebounceMillis in '
-        'lua/plugins/bacon-ls.lua repeats the measurements from '
-        'the 1.4.0 entry below. The split seems deliberate: the '
-        'changelog is where the experiment is described, the '
-        'comment is where the conclusion sits next to the line it '
-        'justifies. That is an inference from the two texts, not '
-        'something either of them states.'),
+All notable changes to this config are documented here.
 
-    ...sec('anatomy of an entry'),
-    ...text('Entries are not terse. The good ones follow the same '
-        'four beats: a bold symptom, the root cause, the change, '
-        'and the check. Here is the first bullet of the 1.2.0 '
-        'entry:'),
-    ...code('md', 'CHANGELOG.md · 1.2.0, the first Fixed bullet (trimmed)', r'''
-- **99 responses were always empty — root cause: relative `tmp_dir` resolved
-  differently by each side of the pipeline.** 99 resolves `tmp_dir` against
-  nvim's cwd, but claude (agentic, working on project files) resolves the same
-  relative `TEMP_FILE` path against the project directory. Launching
-  `nvim Projects/foo/` from `~` meant claude faithfully wrote every answer to
-  `Projects/foo/tmp/99-*` while 99 read the empty placeholder in `~/tmp/99-*`
-  — generation worked the whole time; the completed responses were found
-  sitting unread on disk.'''),
-    ...text('Read it as a small case study. The symptom (“always '
-        'empty”) points at generation, and the natural next move '
-        'is to tinker with prompts, models or flags. The entry '
-        'records that generation worked the whole time and the '
-        'answers were sitting on disk in the wrong place. The '
-        'next bullet in the same entry says how that was '
-        'discovered: the plugin’s logger was silently discarding '
-        'everything, because its file path only takes effect when '
-        '`type = "file"` is set, and “this log was what exposed '
-        'the tmp_dir mismatch.” The order of discovery matters: '
-        'first make the failure observable, then fix it. The '
-        'entry also keeps a dead end. It says an earlier '
-        'same-day attempt with a relative ./tmp path “never '
-        'pushed” fixed one case and broke another, and was '
-        'superseded.'),
-    ...text('The 1.2.0 entry closes with its own evidence: the fix '
-        'was verified end to end twice, once with the working '
-        'directory inside the project and once at the home '
-        'directory, “mimicking the real launch shape”. The '
-        'config that resulted lives in lua/plugins/ninety-nine.lua, '
-        'and its comments are a compressed version of this '
-        'paragraph.'),
+## [Unreleased]'''),
+    ...text('Below the Unreleased heading the entries are not grouped by version because the repository has not tagged a release since 1.8.0 on 2026-10-13. Everything since, including the macros and dependencies phase, the egui and Rust project flows, the website, the Windows and macOS work and the plugin extraction, sits in Unreleased. The Unreleased block is about 150 lines long (lines 5 to 156), so the most recent work was recorded under one heading and not split into versions.'),
+    ...sec('the unreleased block, newest first'),
+    ...text('The top entries are all dated 2026-10-22 and are about the plugins page, the counts, the voice of the documentation, website discoverability and positioning. They are written as short dated paragraphs, not nested lists. The first is the extraction of the nine plugins, seen from the website side.'),
+    ...code('markdown', r'CHANGELOG.md · lines 7-7', r'''
+- Plugins page, 2026-10-22: the nine published xyno plugins (history, sandbox, clipboard, guard, rust, new, imports, crates, macros; MIT, `v0.1.0`) are on the website: a Plugins section on the home page (nine cards, a dependency diagram, a copyable lazy.nvim snippet and the platform status of each) and `plugins/` (table, install order, one complete lazy.nvim spec for the Rust toolkit, a section per plugin, a FAQ, JSON-LD, share card `assets/og-plugins.png`). README has a Plugins section, `docs/DETAILS.md` a note. The wording is taken from the plugin READMEs: Linux tested, the sandbox and the clipboard provider Linux only, Windows and macOS not verified. The test figures were measured again with the whole suite on my Linux machine afterwards (1805 passing, 32 skipped, 0 failing, 38 spec files). Verified by `tests/site_spec.lua` (structure, JSON-LD, links, snippets are valid Lua and list their dependencies, wording); not verified: the plugin READMEs are not fetched by the spec, and xynovim still uses its own in-tree copies of the code.'''),
+    ...text('The second entry corrects the figures. The README and docs/TESTING.md said 1795 passing, 31 skipped, 0 failing across 38 spec files when that entry was written (commit bd7201a); the later commit 2d4445e re-measured with the plugin specs and the README now says 1805 and 32, while this line is unchanged. The changelog states where they come from: the whole suite measured on my Linux machine, with the Ubuntu CI figures left unchanged.'),
+    ...code('markdown', r'CHANGELOG.md · lines 8-8', r'''
+- Counts, 2026-10-22: the test figures in the README and docs/TESTING.md (1795 passing, 31 skipped, 0 failing, 38 spec files) were measured by the whole suite on my Linux machine; the Ubuntu CI figures stay as they were.'''),
+    ...text('The licence note is not in the changelog; it is in the commit history (724c508, keeping xynovim under Apache-2.0 with MIT for the plugins) and is covered by the LICENSE page of this explorer. The changelog does record the removal of tools/Dark.icls, which is why the Island Dark palette is generated from a file you supply yourself.'),
+    ...code('markdown', r'CHANGELOG.md · lines 11-11', r'''
+- Removed `tools/Dark.icls`: my scheme export is no longer distributed, only the palette generated from it (`lua/island/palette.lua`, same content). `tools/icls2nvim.py` stays as a converter for a scheme file you supply (without an input it prints a message and exits 1). The specs use a small synthetic `.icls` rebuilt from the palette.'''),
+    ...text('The Positioning and Acknowledgements entries record wording decisions. The acknowledgements entries end with the words Text only, and the positioning entry says the facts and the history stay as they were. Naming what a change did not touch recurs in the file.'),
+    ...sec('platforms: claims follow evidence'),
+    ...text('Two entries explain the Windows and macOS work, and the second is the more important one. The first, written while the work was in progress and now the last of the two in the file, refuses to claim anything.'),
+    ...code('markdown', r'CHANGELOG.md · lines 17-17', r'''
+- Windows and macOS (in progress, nothing here is claimed as working until a `platforms` run shows it, see the run ids below when they exist). Code: PATH separator and `CARGO_HOME` in `options.lua`; bacon-ls accepts drive-letter roots; `disk_guard` compares normalized, case-folded paths; `.exe` for the debugger binary and the profiling run; `rust_restart` strips `.exe` and skips SIGCONT on Windows; `remote_clipboard` is Linux only; EguiNew unpacks with `tar` when `unzip` is missing on Windows; the manifest writers read and write binary (CRLF kept); `fsutil.rename` retries on Windows; `rust_context` canonicalizes roots; `health` skips unzip/gzip/mold/clang/bwrap on Windows and accepts any C compiler; lazy bootstrap does not wait for a key without a UI. Scripts: `scripts/bootstrap.ps1`, `scripts/test.lua` (`nvim --clean -l`, the runner of `test.sh` without bash) and `scripts/test.ps1`. Tests: `-- xyno-os:` header and `H.need_os` / `H.need_posix` skips with a printed reason, portable fixture copy, specs `agent-failclosed` and `scripts-portable`. CI: `.github/workflows/platforms.yml` (windows-latest, macos-latest; Neovim v0.12.5 pinned by URL and sha256).'''),
+    ...text('The later entry replaces hope with run numbers: Windows green in several runs, macOS green once and not reliably, and README, website and repository description reduced to what those runs show. The same restraint shows in the iteration entry above it, where specs that failed for undiagnosed reasons skip with a printed reason and are listed in docs/KNOWN_ISSUES.md.'),
+    ...code('markdown', r'CHANGELOG.md · lines 15-15', r'''
+- Platforms, wording: README (Install, Platforms), the website (install section, limitations) and the repository description now say only what the `platforms` and `ci` runs show. Windows: run 39673715062 green (bootstrap.ps1, headless start, 1077 passed, 0 failed, 87 skipped; 10 of 38 spec files skipped whole), green in 3 of the last 4 runs (39660597368, 39663956677, 39673715062; 39668277143 failed on spec path assertions, fixed). macOS: not reliably green, green once (39663956677: 1431 passed, 0 failed, 73 skipped), red in 39660597368, 39668277143 and 39673715062 (a treesitter parser failed to compile during the plugin restore). Linux: `ci` run 39673715029, 1724 passed, 0 failed, 76 skipped. Still unverified: Local History, startup options, project creation and live rust-analyzer flows on Windows, codelldb on both, everything the 99 sandbox does off Linux (it refuses to start).'''),
+    ...sec('the sandbox fails closed'),
+    ...text('The security fix in Unreleased is worth quoting. The agent is started with a flag that skips Claude Code permission prompts, so the only thing between it and the user’s home directory is the sandbox. Before the fix, a missing sandbox backend meant the command ran unchanged. The entry names the old behaviour first.'),
+    ...code('markdown', r'CHANGELOG.md · lines 20-20', r'''
+- Agent sandbox fails closed. Without a working sandbox backend (Windows, macOS, Linux without `bwrap`) `agent_sandbox.wrap` returned the command unchanged, so `claude --dangerously-skip-permissions` ran with the user's full privileges and no message. Now `agent_sandbox.status()` gives `bwrap` / `unsandboxed` / `refused`, `wrap()` returns `nil, reason` when refused, and `Guarded.make_request` refuses before the snapshot, the auto-save toggle and the spawn (error notification, `on_complete("failed")`). `vim.g.xynovim_99_sandbox = false` stays the deliberate off switch, the new `vim.g.xynovim_99_allow_unsandboxed = true` permits an unsandboxed run only when there is no backend; only booleans count; every unsandboxed request warns. The module no longer needs a uid at load (`os_get_passwd` may fail off Linux). Specs `agent-sandbox` and `agent-99-guard` cover the matrix (the no-backend case runs on Linux by stripping PATH and by stubbing `has("linux")`); README, DETAILS, KNOWN_ISSUES and the site say Linux-only. Known: the other 99 providers (`<leader>9P`) are not wrapped.'''),
+    ...text('The fix is commit 440d781 on 2026-10-16: agent_sandbox.status() returns one of three values, wrap() returns nil and a reason when refused, and the guarded provider refuses before taking the snapshot, pausing auto-save or spawning anything. A second entry, directly above, closes a related gap: the provider picker could swap in a stock provider that runs its command line with no sandbox at all, so it now accepts only the guarded one unless one of two explicit booleans is set.'),
+    ...code('markdown', r'CHANGELOG.md · lines 19-19', r'''
+- The 99 provider picker (`<leader>9P`) could swap in a stock provider (OpenCode, Cursor, Kiro, Gemini) that runs its CLI with no sandbox, checkpoint or auto-save guard. `_99.set_provider` and the picker now refuse anything but the guarded provider unless `vim.g.xynovim_99_sandbox = false` or `vim.g.xynovim_99_allow_unsandboxed = true`. `provision.lua` retries Mason packages whose install was aborted (codelldb failed the `ci` run 39635190559). The undiagnosed macOS/Windows skips and the whole-file macOS skips are listed in docs/TESTING.md.'''),
+    ...sec('website, recordings and new project flows'),
+    ...bullet('Website, 2026-10-16', 'the official site was added in 94ff2dc and deployed from an orphan commit on gh-pages; the entry records the pages run and the pages-build-deployment run ids so a reader can check.'),
+    ...bullet('New Rust projects', 'dashboard entries b, i and w and the commands :RustNewBin, :RustNewLib, :RustNewWorkspace and :RustNewMember (commit d163480). The workspace is built by the config because cargo has no one-step command for it.'),
+    ...bullet('Dashboard sizes', 'with 14 entries the layouts clipped, so the thresholds became formulas of the entry count: tall 2n+11 rows, header n+12, none below; every entry is visible from 80x18 up.'),
+    ...bullet('egui toolchain', ':EguiNew stopped enforcing the template’s toolchain pin (commit 0cfb739) and gained a minimum-version check; the code that coped with the pin was removed, and the entries about it above are labelled as history.'),
+    ...sec('macros and dependencies'),
+    ...text('The next block, Added (macros and dependencies), lists the modules of the October 14 phase one by one. The entries are short and each names a file, so they double as an index of lua/config.'),
+    ...code('markdown', r'CHANGELOG.md · lines 37-40', r'''
+- Dependency freshness: saving `Cargo.toml` / `Cargo.lock` from nvim restarts bacon-ls 500 ms after the last save (it kept a stale `cannot find crate` error for minutes) and the statusline shows `deps resolving` until rust-analyzer has reloaded (6 s when it never went busy, 120 s ceiling). `config/rust_restart.lua`, `config/lsp_status.lua`.
+- `config/crate_meta.lua` (cached `cargo metadata`, registry sources, a small crates.io client with sparse index and search, all argv lists, names validated) and `config/code_actions.lua` (find and apply one rust-analyzer code action without a menu).
+- `config/crate_add.lua`: a hint on a path whose first segment is no dependency with the action "Add crate `x`", `:CrateAdd [query]` / `<leader>rA` (crates.io search with features and their descriptions, target package / `--dev` / `--build`, then `cargo add` and the import that triggered it).
+- `config/crate_features.lua`: the action "Enable feature `derive` of `serde`" / `<leader>rG` for `cannot find derive macro / attribute / macro / function X`, found from the crate's own source and `[features]`; `:CrateFeatures [crate]` feature explorer with toggling.'''),
+    ...text('The same phase has three more blocks: Fixed (review), Fixed (field test) and Changed. The pattern repeats across the file. A feature lands, a review pass finds problems, a field test finds more, and each round gets its own heading, which is why headings such as final loop round 5 exist: they mark the order in which bugs were found.'),
+    ...sec('releases 1.8.0 to 1.5.0: the field-test loop'),
+    ...text('The 1.8.0 section (2026-10-13) closes the fresh-install problem. The entry is a small research report: it reproduces the failure with empty XDG directories, states the cause after reading lazy.nvim’s code and confirming by experiment, and gives the recipe that worked.'),
+    ...code('markdown', r'CHANGELOG.md · lines 157-168', r'''
+## [1.8.0] — 2026-10-13
 
-    ...sec('the shape of the file'),
-    ...text('Reading from the top, the file has three eras with '
-        'very different densities.'),
-    ...bullet('lines 5 to 245, versions 1.4.1 down to 1.0.0',
-        'the LazyVim era on Linux. Six releases between '
-        '2026-09-02 and 2026-09-04, 241 lines, 50 percent of the '
-        'file. Each has a date.'),
-    ...bullet('lines 246 to 430, “Unreleased — Windows lineage”',
-        '185 lines, 39 percent of the file, with no version '
-        'number. It records the nine commits of 2026-08-18 on the '
-        'earlier from-scratch Windows config. More below.'),
-    ...bullet('lines 431 to 478, versions 0.2.0 and 0.1.0',
-        'the two oldest releases, 48 lines. Neither has a date '
-        'in its heading; 0.1.0 is labelled “initial commit”.'),
-    ...text('The heading vocabulary (Added, Changed, Fixed, '
-        'Removed, and an Unreleased section) is the familiar '
-        'Keep a Changelog convention, though the file never cites '
-        'it. Two headings are the author’s own: “Verified” (used '
-        'in 1.4.0 and, as “Verified (no code change)”, in the '
-        'Windows block) and “Docs” (1.4.1). Verified is the '
-        'interesting one. It exists for results that changed '
-        'nothing in the code but changed what is known: the '
-        'ESLint server resolves ESLint from the project’s own '
-        'node_modules and silently does nothing without a local '
-        'install. A bullet in 1.3.0 does the same in spirit '
-        'under Added: blink.cmp was checked and is on its native '
-        'Rust fuzzy matcher, because “the Lua fallback '
-        'downgrade is silent”.'),
-    ...text('Another trace of how the file was built: inside the '
-        'Windows block the same heading repeats. “Changed” '
-        'appears three times, “Added” three times and “Fixed” '
-        'twice. Several commits put their own sections above the '
-        'earlier ones instead of merging into one list, so the '
-        'repeats preserve the order in which the work happened, '
-        'newest first.'),
+### Fixed (field test batch 5: fresh install, CI and docs)
+- Fresh install did not reproduce `lazy-lock.json` (bug 28). Reproduced with
+  empty XDG dirs and a clone: after `Lazy! restore` 6 of 79 plugins sat on newer
+  commits and the lockfile was rewritten. Cause (lazy's code read, behaviour
+  confirmed by experiments): the first install round only knows the plugins of
+  the user spec and writes the lockfile with those, dropping the pins of the
+  ones found in later rounds (LazyVim's extras). `Lazy! install`, original
+  lockfile back, `Lazy! restore` ended with an identical lockfile (twice);
+  restoring a second time without putting the lockfile back did not help.
+- New `scripts/bootstrap.sh`: checks git, curl, tar, unzip, gcc, npm, node,'''),
+    ...text('That entry is the origin of scripts/bootstrap.sh, which the README now explains in a paragraph. It also shows the second property of this file: the count of 6 of 79 plugins here is not the one the README gives today (5 of 79 in the first fresh-install tests, with kulala as a sixth until a later fix, and 61 locked after 18 theme-only plugins were dropped), and the README carries the later wording. The changelog keeps what was true when written.'),
+    ...text('Release 1.7.0 holds field-test batches 2 to 4, which fix keys that did nothing, data safety (Local History exit snapshot, per-process index, size cap, prune) and editing and UI. The Removed block at line 146, still under Unreleased, records the end of Omarchy support after the Island Dark decision of 1.6.0, down to the renamed clipboard provider and the new option name.'),
+    ...code('markdown', r'CHANGELOG.md · lines 146-155', r'''
+### Removed
+- All Omarchy support. Deleted `lua/plugins/omarchy-theme-hotreload.lua`, the
+  `lua/plugins/theme.lua` symlink, `lua/plugins/all-themes.lua` (18 colourscheme
+  plugins that only Omarchy themes used) and the `theme.lua` loadfile guard in
+  `lua/config/lazy.lua`; `vim.g.xynovim_follow_omarchy` is gone and Island Dark
+  is set unconditionally. The 18 plugins are dropped from `lazy-lock.json`
+  (tokyonight and catppuccin stay: LazyVim specs them). The remote clipboard
+  provider is now `XynovimRemoteClipboard` and its OSC 52 opt-out is
+  `vim.g.xynovim_remote_clipboard_osc52` (was `omarchy_remote_clipboard_osc52`).
+  Older entries below keep their Omarchy wording as history.'''),
+    ...text('Release 1.6.0 itself changed the theme: Island Dark became the permanent colourscheme with transparency as the default, and the entry ends with its own verification statement, including what was not verified.'),
+    ...code('markdown', r'CHANGELOG.md · lines 289-300', r'''
+## [1.6.0] — 2026-10-12
 
-    ...sec('how the version numbers came about'),
-    ...text('There are no git tags in the repository, on the remote '
-        'either, and no compare links in the file. The versions '
-        'exist only as headings, and the history of the headings '
-        'is itself informative.'),
-    ...bullet('0.1.0',
-        'the initial commit, 2026-08-17. The CHANGELOG did not '
-        'exist then; it was created under two hours later in 3dacffb '
-        'with an [Unreleased] section on top of a 0.1.0 section '
-        'that described the first push after the fact.'),
-    ...bullet('0.2.0',
-        'a label put on yesterday’s work. When 77d80a2 added the '
-        'nvim-lightbulb entry on 2026-08-18 at 12:57, it inserted '
-        'a “## [0.2.0]” line below the new text, which turned the '
-        '3dacffb entry (auto-save, clippy, inlay hints, the '
-        'mason-lspconfig fix) into a release and let the new text '
-        'stay Unreleased.'),
-    ...bullet('Unreleased, Windows lineage',
-        'the pile that grew for the rest of 2026-08-18 and was '
-        'never numbered. When the rewrite to LazyVim happened, '
-        'the commit eabb22a wrote 1.0.0 above it and renamed its '
-        'heading to “Unreleased — Windows lineage, superseded by '
-        '1.0.0 on this branch”.'),
-    ...bullet('1.0.0 to 1.4.1',
-        'one new heading per behaviour-changing commit: 1.0.0 '
-        '(eabb22a), 1.1.0 (3ec11c4), 1.2.0 (07993a4), 1.3.0 '
-        '(f35b4f6), 1.4.0 (0715b98), 1.4.1 (6aeebfd). The docs '
-        'fix 77149b8 three minutes after 1.4.1 added a Docs '
-        'section to 1.4.1 and did not create 1.4.2.'),
-    ...text('The numbers therefore track working sessions more than '
-        'semantic versioning: 1.4.0 is mostly bug fixes yet bumps '
-        'the minor number, and 1.1.0 and 1.2.0 are about half an hour '
-        'apart. That is a reading of the headings, not a claim '
-        'the file makes. For a personal configuration with no '
-        'consumers, a number is a bookmark for “this state was '
-        'checked”, and that is how it is used here.'),
+### Changed
+- Theme: Island Dark (my own "Dark" scheme, parent Darcula) is now
+  the permanent colourscheme. `tools/icls2nvim.py` converts `tools/Dark.icls` to
+  `lua/island/palette.lua`; `lua/island/init.lua`, `colors/island-dark.lua` and a
+  lualine theme map it to UI, Treesitter, LSP semantic (`org.rust.*`) and plugin
+  groups. Omarchy's theme spec and hot-reload no longer override it (set
+  `vim.g.xynovim_follow_omarchy = true` to follow Omarchy again). Transparency
+  stays the default; new `<leader>uO` toggle. Verified headless (49 colour checks
+  against an independent parse of the `.icls`, real rust-analyzer tokens) and in
+  tmux (24-bit SGR); not verified with a live Omarchy theme switch.'''),
+    ...text('Release 1.5.0 (2026-10-09) carries the review findings that hardened the sandbox, Local History and the 99 guard, and the Roadmap step 11 additions: the claudecode extra, a lualine readiness component, a right-click Rust menu, an opt-in colour-blind diagnostic palette and :checkhealth xynovim.'),
+    ...code('markdown', r'CHANGELOG.md · lines 398-410', r'''
+## [1.5.0] — 2026-10-09
 
-    ...sec('1.0.0, 2026-09-02: a lineage switch, not an edit'),
-    ...code('md', 'CHANGELOG.md · 1.0.0, Changed (trimmed)', r'''
-- **Migrated the whole config from the from-scratch Windows setup to a
-  LazyVim-based config on Linux (Omarchy/Arch).** This is a platform lineage
-  switch, not an incremental edit — the previous tree (everything under
-  `lua/config/plugins/`, the nvim-cmp/mason wiring in `lsp.lua`, and the
-  Windows-specific `bootstrap-device.ps1`) is replaced by the LazyVim starter
-  (v8) layout with custom specs under `lua/plugins/`. The old Windows config
-  remains untouched on the `master` branch.'''),
-    ...text('The commit behind it, eabb22a, touches 40 files with '
-        '1,147 insertions and 1,273 deletions: more lines removed '
-        'than added. The entry is careful about what survived '
-        'unchanged. 99 keeps the same provider, model, effort '
-        'flag and five keymaps; only its source changes, from a '
-        'local clone to the GitHub repository, and the keymaps '
-        'gain which-key descriptions. auto-save.lua and harpoon '
-        'were carried over. Everything LazyVim already ships '
-        '(telescope, treesitter, conform, autopairs, toggleterm, '
-        'lualine) was deleted from the config instead of being '
-        'migrated, and the “Removed” list says so by name, along '
-        'with the PowerShell and Flutter wiring: “this machine’s '
-        'config is currently scoped to Rust.”'),
-    ...text('The same entry lists what is new: the Omarchy desktop '
-        'integration files (theme hot-reload, the 20 pre-loaded '
-        'themes, transparency, a remote-aware clipboard) and two '
-        'tiny LazyVim tweaks. The commit message repeats a detail '
-        'that has since gone stale: that the old config “stays on '
-        'master”. See the section on disagreements below.'),
+### Fixed
+- Review findings: agent sandbox now keeps `.git/hooks`, `.git/config` and
+  `~/.claude` settings/hooks read-only and hides more credential paths and
+  variables; local history retries forced snapshots, times out hung git and
+  reports `update-ref` failures; 99 guard restores auto-save on a synchronous
+  throw; npm installed and checked by `:checkhealth xynovim` (markdownlint
+  ENOENT); README startup time, log path, `:ClaudeCode`, kulala keys and
+  layout corrected.
 
-    ...sec('1.1.0 and 1.2.0, 2026-09-03: the morning after'),
-    ...text('1.1.0 (3ec11c4, 07:05) is the entry that introduces '
-        'bacon-ls. Its design decision is recorded as a '
-        'constraint: updateOnInsert must live in init_options, '
-        'not only in settings, because the server needs it at '
-        'initialize time to advertise Full didChange sync. '
-        'Verification is headless and end to end: a clippy-only '
-        'lint (needless_return) published on open, and a type '
-        'error typed into a modified, unsaved buffer surfacing '
-        'as “mismatched types” with zero saves.'),
-    ...text('Two parts of the entry age interestingly. It records '
-        'that Mason’s bacon package failed to produce a binary, '
-        'so bacon 3.25 came from pacman while bacon-ls 0.29.0 '
-        'came from Mason; by 1.4.1 neither is true, because the '
-        'server is a local build and the bacon binary is not '
-        'needed at all. And it says the didSave proxy in '
-        'auto-save.lua is “no longer load-bearing for '
-        'diagnostics (bacon-ls listens to didChange, not '
-        'didSave)”. The comment now in auto-save.lua says the '
-        'opposite about the same server: bacon-ls relies on '
-        'didSave to restore its shadow-workspace hardlinks, and '
-        '1.4.0’s second patch is about how it handles didSave. '
-        'Understanding of the server improved between entries, '
-        'and the changelog shows the earlier belief instead of '
-        'editing it away.'),
-    ...text('1.2.0 (07993a4, 07:37) is the 99 entry quoted above, '
-        'plus a rewrite of the README to describe this config '
-        'instead of the LazyVim starter text, and blink '
-        'completion for the prompt buffer via saghen/blink.compat.'),
+### Added
+- Roadmap step 11: LazyVim extra `ai.claudecode`, a lualine rust-analyzer /'''),
+    ...sec('releases 1.4.x to 1.1.0: the bacon-ls story'),
+    ...text('The September 2026 releases are one continuous investigation into a single tool. 1.1.0 (2026-09-03) adds live-as-you-type Rust diagnostics through bacon-ls, which is how the project’s centrepiece began.'),
+    ...code('markdown', r'CHANGELOG.md · lines 645-656', r'''
+## [1.1.0] — 2026-09-03
 
-    ...sec('1.3.0, 2026-09-03: two pipelines, one bug'),
-    ...text('This is the entry the rest of the project hangs on. '
-        'It is also the one with the most numbers.'),
-    ...code('md', 'CHANGELOG.md · 1.3.0, the first Fixed bullet (trimmed)', r'''
+### Added
+- **Live-as-you-type Rust diagnostics via bacon-ls** — the always-on
+  inspections known from the JetBrains IDEs. `vim.g.lazyvim_rust_diagnostics = "bacon-ls"` in
+  `options.lua` hands the diagnostics role to bacon-ls (LazyVim's rust extra
+  disables rust-analyzer's own checkOnSave/diagnostics to avoid duplicates);
+  rust-analyzer keeps completion, goto/references, hover, inlay hints, and
+  code actions. New `lua/plugins/bacon-ls.lua` configures bacon-ls 0.29's
+  native **cargo backend**: clippy (`--workspace --all-targets
+  --all-features`) run by the server itself, with `updateOnInsert = true` —
+  it mirrors the workspace into a hardlinked shadow under'''),
+    ...text('1.3.0 fixes the first performance problem: two clippy pipelines were cancelling each other and serialising on cargo’s build-dir lock. The measured result is in the entry, 5.6 s down to 0.8 to 0.9 s from edit to diagnostic on a warmed project, together with an A/B test that proved updateOnInsert had to stay on.'),
+    ...code('markdown', r'CHANGELOG.md · lines 549-559', r'''
+## [1.3.0] — 2026-09-03
+
+### Fixed
 - **Slow, churning diagnostics ("checking (0%)" rows stacked for minutes).**
   Root cause: two clippy pipelines — `checkOnSave` runs (triggered by the ~1s
   auto-save) racing `updateOnInsert` shadow runs — cancelling each other and
@@ -231,416 +145,105 @@ final Buffer page = makePage(
   every run's scope. Fixed: `checkOnSave = false` (single pipeline),
   `--all-targets` dropped, debounce 500→800ms. Measured 5.6s → 0.8–0.9s
   edit-to-diagnostic on a warmed project. A/B testing also proved
-  `updateOnInsert` must stay on: without it bacon-ls advertises no document
-  sync (Neovim ignores its late dynamic registration) and diagnostics never
-  refresh at all.'''),
-    ...text('Three separate findings are packed into that bullet. '
-        'The first is a diagnosis: the slowness had two causes at '
-        'once, a second trigger and a doubled workload, and '
-        'removing either alone would have looked like progress. '
-        'The second is a number: 5.6 s to 0.8–0.9 s, roughly six '
-        'times. The third is a negative result that protects the '
-        'fix: turning updateOnInsert off, the obvious way to '
-        'remove a pipeline, breaks the server entirely, which is '
-        'why the comment in bacon-ls.lua says it “MUST be set '
-        'in init_options” and “must stay ON”, and records the '
-        'worst case it observed: “marker diagnostic never arrived '
-        'in 300s”.'),
-    ...text('A note on the “500→800ms”. The first version of '
-        'lua/plugins/bacon-ls.lua (3ec11c4) sets no debounce at '
-        'all, so the 500 is presumably the server’s own default. '
-        'That is an inference from the file; the entry does not '
-        'say. What is certain is that 1.4.0 moves the setting '
-        'back to 500 explicitly, for a reason the changelog '
-        'gives: the 800 had been compensating for a bug.'),
-    ...text('The rest of 1.3.0 is a list of things found by '
-        'looking at what the editor does in the background:'),
-    ...bullet('the vim.cmd monkey-patch is gone',
-        'auto-save’s didSave workaround matched the plugin’s '
-        'internal command string, so an upstream rename would '
-        'have broken it silently, and it added a metatable '
-        'indirection to every vim.cmd call in the session. It '
-        'was replaced by the plugin’s own User AutoSaveWritePost '
-        'event. The verification line is specific: didSave still '
-        'reaches both LSP clients and BufWritePre is still '
-        'suppressed.'),
-    ...bullet('transparency survives :colorscheme',
-        'the highlight overrides were applied only at startup; '
-        'they are now re-applied on every ColorScheme event in a '
-        'cleared augroup.'),
-    ...bullet('startup 28.7 ms to about 18 ms, and no background work',
-        'a harpoon keys function was force-loading the plugin '
-        'and plenary on every start; 99, telescope and '
-        'blink.compat now load on their keymaps; the update '
-        'checker (commented in lua/config/lazy.lua as “~6-10ms”) '
-        'and four remote-plugin providers are off. The entry '
-        'does not say how startup was timed, so treat the two '
-        'figures as one machine’s before and after. The README '
-        'page walks through the items.'),
-    ...bullet('an `== 1` that was missing',
-        'the theme hot-reload tested vim.fn.exists("syntax_on") '
-        'as if it were a boolean. In Lua, 0 is truthy, so the '
-        'branch always ran. A one-line bug in a language where '
-        'zero is true, now compared explicitly:'),
-    ...code('lua', 'lua/plugins/omarchy-theme-hotreload.lua · the fixed test', r'''
--- vim.fn.exists returns 0/1, and 0 is truthy in Lua -
--- must compare, or this branch always runs
-if vim.fn.exists("syntax_on") == 1 then
-  vim.cmd("syntax reset")
-end'''),
-    ...text('The same entry also adds the pieces that make the two '
-        'diagnostic tiers possible and records their evidence: '
-        'rust-analyzer’s native diagnostics re-enabled alongside '
-        'clippy (“measured 155–235ms warm (real keystrokes, '
-        'clean-state probes)”), cargo.targetDir = true so '
-        'rust-analyzer’s build-script runs stop contending with '
-        'terminal cargo commands for the build-directory lock, '
-        'and clippy --no-deps. Outside the repository it '
-        'documents ~/.cargo/config.toml: the mold linker via '
-        'clang (linking verified through readelf) and '
-        'profile.dev.debug set to line-tables-only, with the '
-        'caveat that existing projects rebuild once after the '
-        'debuginfo change.'),
+  `updateOnInsert` must stay on: without it bacon-ls advertises no document'''),
+    ...text('1.4.0 (2026-09-04) then finds that bacon-ls itself aborts its debounce task even after the sleep has elapsed, killing the in-flight cargo run and leaking progress tokens. The fix was a locally patched build.'),
+    ...code('markdown', r'CHANGELOG.md · lines 504-515', r'''
+## [1.4.0] — 2026-09-04
 
-    ...sec('1.4.0, 2026-09-04: the bug that was upstream'),
-    ...text('About five and a half hours after 1.3.0 (f35b4f6 at '
-        '19:54, 0715b98 at 01:18) the work reaches a different '
-        'kind of problem: even with one pipeline, bacon_ls could '
-        'stay stuck on “checking…” with stale diagnostics. The '
-        'root cause was not in this repository.'),
-    ...code('md', 'CHANGELOG.md · 1.4.0, the first Fixed bullet (trimmed)', r'''
+### Fixed
 - **bacon_ls stuck on "checking…" with stale diagnostics — root-caused to an
   upstream bacon-ls 0.29.0 bug and fixed in a locally patched build**
-  ...
+  (`~/.local/src/bacon-ls-0.29.0-patched`, installed at `~/.cargo/bin/bacon-ls`,
+  wired via `cmd` override in `lua/plugins/bacon-ls.lua`). Upstream `abort()`s
   its debounce task even after the sleep has elapsed — at that point the task
   IS the in-flight cargo run, so any keystroke or auto-save `didSave` killed
   the run silently: progress tokens leaked (begin, never end → the immortal
   stacked "checking" rows), the cargo child died mid-check, and the last run
-  of every typing burst was murdered ~200ms in by auto-save (debounce 1000ms
-  vs run start at 800ms) leaving diagnostics stale.'''),
-    ...text('The mechanism rewards slow reading. A debounce task '
-        'sleeps, then does its work. Cancelling it during the '
-        'sleep is correct. Cancelling it after the sleep is not '
-        'a cancel of the timer but a cancel of the work, because '
-        'the work runs inside the same task. Once the cargo '
-        'child dies mid-check, the LSP progress token that began '
-        'with “begin” never receives its “end”, so the '
-        'client shows it forever. The arithmetic in the '
-        'parenthesis explains why it happened every time: '
-        'auto-save fires 1000 ms after the last keystroke, the '
-        'run started 800 ms after it, and the save’s didSave '
-        'therefore landed 200 ms into the run, in the final run '
-        'of every burst. With the abort bug fixed the 800 ms is '
-        'no longer needed; the entry says it was “compensating '
-        'for” the bug without spelling out how. At 500 ms the '
-        'same save lands 500 ms into the run instead of 200 ms. '
-        'That arithmetic is mine, not the entry’s, and once runs '
-        'can no longer be killed the exact timing stops '
-        'mattering.'),
-    ...text('The entry lists three patches. Patch 1 makes a started '
-        'run un-abortable and routes superseded runs through '
-        'CancelRunning, which closes tokens properly. Patch 2 '
-        'fixes a save inside the debounce window skipping the '
-        'check altogether when checkOnSave is off: only cancel '
-        'the pending live trigger if a save-run will replace '
-        'it. Patch 3 handles closing a dirty buffer. Orphaned '
-        'diagnostics stayed behind (and the entry says they '
-        'could even crash Neovim 0.12’s underline handler on '
-        'reopen via out-of-range lines), and cargo replayed '
-        'stale warnings because the hardlink restore moved the '
-        'shadow file’s mtime backwards, so cargo judged the '
-        'crate fresh. The fix restores by copy so the mtime is '
-        'new and a real re-check happens.'),
-    ...text('The measurement that retires the old setting is in the '
-        'same entry:'),
-    ...code('md', 'CHANGELOG.md · 1.4.0, Changed', r'''
-- `updateOnInsertDebounceMillis` 800 → **500**. Measured on a warm 3-crate
-  workspace: edit-to-clippy-diagnostic = debounce + ~60ms, and 500ms coalesces
-  an 18-keystroke burst into exactly 1 cargo spawn, same as 800 (300ms spawned
-  18 — churn). The 800ms choice was compensating for the now-fixed abort bug.
-  Median edit→diagnostic: 0.56s warm.'''),
-    ...text('This is a small experiment written as a paragraph: '
-        'a model (latency is debounce plus about 60 ms), a '
-        'workload (one 18-keystroke burst), three settings, and '
-        'a count of cargo spawns for each. 300 ms is rejected '
-        'because it spawned 18 runs; 500 and 800 both spawned '
-        'one, so the smaller wins. The last sentence closes the '
-        'loop on the earlier change.'),
-    ...text('The verification block is the most detailed one in '
-        'the file, and it is worth quoting because of its range:'),
-    ...code('md', 'CHANGELOG.md · 1.4.0, Verified (trimmed)', r'''
-- 35-check headless E2E suite (`~/.bacon-e2e/`: harness + tiny-crate,
-  3-crate-workspace, and randomized 120-op soak batteries): lint/syntax/type
-  errors appear and clear unsaved; cfg(test) exclusion documented; cross-crate
-  errors propagate (1.0s) and clear; serde derive + macro-expansion errors map
-  to the right file; Cargo.toml dep edits flow through the shadow; dirty
-  close/reopen cycles; cancellation storms and hostile didSave timings — zero
-  leaked progress tokens everywhere, bacon-ls RSS 9.5MB after 120-op soak, no
-  stray cargo processes.'''),
-    ...text('Functional cases (errors appear and clear), edge cases '
-        '(macros, derive, Cargo.toml edits), the very bug being '
-        'fixed (cancellation storms, hostile save timings), and '
-        'the resource cost of the fix (RSS after a soak, stray '
-        'processes). The suite lives outside the repository, in '
-        'the author’s home directory, so only its description is '
-        'reviewable here. The entry ends with an integration '
-        'check on the real LazyVim config with the real '
-        'auto-save: 0.71 s for the clippy tier and 0.68 s for the '
-        '“error tier”. That second number sits awkwardly beside '
-        '1.3.0’s 155–235 ms for native diagnostics, and the '
-        'entry does not say whether it is the same probe. It is '
-        'left unreconciled here, too.'),
+  of every typing burst was murdered ~200ms in by auto-save (debounce 1000ms'''),
+    ...text('1.4.1 sends the three fixes upstream as crisidev/bacon-ls#139 and rebuilds on 0.30.0. docs/HISTORY.md records that #139 was merged on 2026-09-10 and shipped in bacon-ls 0.31.0 on 2026-09-20, and that its 2026-10-09 reality check found the local override pointing at binaries that did not exist and removed the override in lua/plugins/bacon-ls.lua.'),
+    ...code('markdown', r'CHANGELOG.md · lines 483-492', r'''
+## [1.4.1] — 2026-09-04
 
-    ...sec('1.4.1, 2026-09-04: making the fix mergeable'),
-    ...code('md', 'CHANGELOG.md · 1.4.1, Changed (trimmed)', r'''
+### Changed
 - The three bacon-ls fixes were **upstreamed as
   [crisidev/bacon-ls#139](https://github.com/crisidev/bacon-ls/pull/139)**.
   The local binary now builds from upstream 0.30.0 + that branch
   (`~/.local/src/bacon-ls-upstream`) instead of the 0.29.0 fork. The
   run-abort fix was reworked to add no struct field (the debounce task drops
   its own handle after its sleep rather than tracking a generation counter),
-  keeping the `BackendRuntime` `large_enum_variant` size lint quiet — upstream
-  CI runs `cargo clippy --all-targets`.'''),
-    ...text('This is the point where a private patch becomes a '
-        'contribution, and the entry shows what that costs. The '
-        'generation counter that 1.4.0 used needed a new field '
-        'on a struct, and the entry’s reason for redoing it is '
-        'that a field would set off the large_enum_variant size '
-        'lint on BackendRuntime, which upstream CI enforces. So '
-        'the fix was redone: '
-        'the debounce task forgets its own handle once the '
-        'sleep is over, which makes a later abort() able to '
-        'cancel only a task that is still sleeping. Behaviour is '
-        'identical, the 35-check suite passes against the '
-        'field-free build, and upstream’s 124 tests pass '
-        '(including a new restore_copy test). The instruction '
-        'for the future is stated in the entry and repeated in '
-        'the Lua: drop the cmd override once #139 merges. Three '
-        'minutes later 77149b8 corrects the README: bacon-ls '
-        'comes from the local build, and the bacon binary is '
-        'not needed by the cargo backend.'),
+  keeping the `BackendRuntime` `large_enum_variant` size lint quiet — upstream'''),
+    ...text('Release 1.2.0 sits between them and is a different kind of bug: every 99 response came back empty because 99 and Claude Code resolved a relative tmp_dir against different directories. The entry explains that generation had worked the whole time and the answers were sitting unread on disk, and the fix is an absolute path.'),
+    ...code('markdown', r'CHANGELOG.md · lines 607-619', r'''
+## [1.2.0] — 2026-09-03
 
-    ...sec('a bug that took four commits in an afternoon'),
-    ...text('The densest stretch of the history is 2026-08-18, '
-        'between 14:17 and 15:21, in the Windows lineage. Four '
-        'commits, one chain of causes. Each entry in the file '
-        'explains why the previous fix had not been enough.'),
-    ...bullet('9a170c2, 14:17',
-        'two findings. The inline error text was invisible: '
-        'rose-pine’s own DiagnosticVirtualText groups set '
-        'foreground equal to background (with a blend), and the extmark was '
-        'confirmed drawn through nvim_buf_get_extmarks, so the '
-        'text was there but the same colour as its background. '
-        'And diagnostics seemed to need :w, when really '
-        'update_in_insert defaults to false, so they only '
-        'redrew on InsertLeave, and Esc always precedes :w.'),
-    ...bullet('3ab52cd, 14:38',
-        'diagnostics still did not refresh without a save. Root '
-        'cause, with evidence: noautocmd = true on the '
-        'autosave, added so autosaves would not format, '
-        'suppresses all autocmds, including the LSP client’s '
-        'BufWritePost-triggered didSave. Confirmed directly: a '
-        'noautocmd write sends zero LSP notifications; a normal '
-        'write sends didSave. The fix wrapped vim.cmd.'),
-    ...bullet('6d1e9c9, 14:45',
-        'still needed to leave insert mode. TextChanged only '
-        'fires for edits outside insert mode; its insert-mode '
-        'sibling TextChangedI was missing. Verified with '
-        'InsertLeave never firing at all: the diagnostic '
-        'appeared in about 1.5 s. The entry notes that the '
-        'debounce cancels and reschedules on every trigger, so '
-        'there is no save flood while typing, which it says was '
-        '“confirmed by reading auto-save.nvim’s own source”.'),
-    ...bullet('df3c5ae, 15:21',
-        'the fix from 3ab52cd broke lazy.nvim. Replacing vim.cmd '
-        'with a plain function removed its dot-call forms, so '
-        'vim.cmd.helptags(...) threw “attempt to index field '
-        '‘cmd’ (a function value)”, which surfaced in a live '
-        'session in lazy’s own help-update routine. vim.cmd is a '
-        'callable table, and a function has no fields. The '
-        'repair is a proper setmetatable proxy that forwards '
-        'indexing to the original and intercepts only the string '
-        'call.'),
-    ...text('The story has an epilogue sixteen days later. The '
-        'metatable proxy was still a monkey-patch, and 1.3.0 '
-        'removed it for the plugin’s supported event. The '
-        'earlier entries were not rewritten when that happened; '
-        'both are in the file. Read in order, they show a fix '
-        'being refined three times: found by experiment, '
-        'repaired after it broke something else, and finally '
-        'replaced by an interface the plugin promises to keep.'),
-    ...code('lua', 'lua/plugins/auto-save.lua · where the story ended up', r'''
-    -- auto-save.nvim fires its own `User AutoSaveWritePost` autocmd AFTER
-    -- the (noautocmd) write completes, with the buffer in data.saved_buffer
-    -- - a supported hook, so send didSave from there. (This replaced an
-    -- earlier vim.cmd proxy that pattern-matched the plugin's internal
-    -- command string; the User event survives plugin refactors, the string
-    -- match didn't.)'''),
+### Fixed
+- **99 responses were always empty — root cause: relative `tmp_dir` resolved
+  differently by each side of the pipeline.** 99 resolves `tmp_dir` against
+  nvim's cwd, but claude (agentic, working on project files) resolves the same
+  relative `TEMP_FILE` path against the project directory. Launching
+  `nvim Projects/foo/` from `~` meant claude faithfully wrote every answer to
+  `Projects/foo/tmp/99-*` while 99 read the empty placeholder in `~/tmp/99-*`
+  — generation worked the whole time; the completed responses were found
+  sitting unread on disk. Fixed by making `tmp_dir` absolute
+  (`~/.cache/nvim/99`), unambiguous for both sides and cwd-independent; safe
+  outside claude's cwd because ClaudeCodeProvider passes'''),
+    ...sec('1.0.0 and the Windows lineage'),
+    ...text('1.0.0 (2026-09-02) is the pivot of the whole history: the from-scratch Windows config is replaced by a LazyVim-based config on Linux. The entry calls it a platform lineage switch, not an incremental edit.'),
+    ...code('markdown', r'CHANGELOG.md · lines 678-690', r'''
+## [1.0.0] — 2026-09-02
 
-    ...sec('the Windows lineage block'),
-    ...text('A reader opening the file at line 246 meets 185 lines '
-        'about a configuration that no longer exists on main: '
-        'nvim-cmp, mason-lspconfig, flutter-tools, a PowerShell '
-        'bootstrap script. They are kept, and the 1.0.0 entry '
-        'points back to them. The branch windows-legacy holds '
-        'that code (its tip, 9fff81e, is the last commit before '
-        'the migration). The block records five pieces of work '
-        'on 2026-08-18, each with its own piece of reasoning:'),
-    ...bullet('lualine (28fab99, 15:38)',
-        'the “stuck” mode indicator that was being read was '
-        'Neovim’s own showmode echo, which is uncoloured and only '
-        'redraws on certain events. A statusline plugin with '
-        'theme auto and globalstatus replaced it, verified by '
-        'checking that the per-mode highlight groups resolve to '
-        'different backgrounds and that the rendered statusline '
-        'switches from NORMAL to VISUAL.'),
-    ...bullet('islands-dark (99bdcbc, 15:55)',
-        'a colorscheme ported from RustRover. The entry checks '
-        'the claim behind the name: JetBrains’ Islands is a UI '
-        'chrome redesign, not a palette, confirmed from its own '
-        'announcement, and the editor colours are still '
-        'Darcula-derived. Rather than guess hex values the '
-        'author exported the scheme as .icls and read the real '
-        'values (background #191a1c, foreground #bcbec4, '
-        'keywords #cf8e6d, and so on), then confirmed Normal '
-        'resolves to them byte for byte.'),
-    ...bullet('OneDrive sync (da7b95d, 16:03)',
-        'the repo moved to a synced folder and a directory '
-        'junction took its place, chosen over symlinks because '
-        'junctions need no admin rights. Move-Item failed first, '
-        'and the cause is a good fact: Windows locks a directory '
-        'while any process’s working directory points into it, '
-        'and two live nvim processes plus the shell session doing '
-        'the move were doing that.'),
-    ...bullet('bootstrap-device.ps1 (e9bb0af, 16:16)',
-        'a one-shot bootstrap for a clean machine. Every step is '
-        'idempotent, two steps are deliberately manual because '
-        'they are credential flows (the OneDrive sign-in and '
-        'claude auth login), and the testing is described with '
-        'unusual care: parsed with the PowerShell parser before '
-        'running, run end to end on the real machine where every '
-        'step took its skip path, and the overwrite-confirmation '
-        'logic tested only against throwaway fake paths, with '
-        'the note that it was not exercised on the real config '
-        '“to avoid any risk to it”.'),
-    ...bullet('nvim-lightbulb and ESLint (77d80a2, 12:57)',
-        'the lightbulb sign was verified against a real ESLint '
-        'install and flat config in a test project, and the '
-        'discovery that the ESLint language server does nothing '
-        'without a project-local ESLint is the “Verified (no '
-        'code change)” entry.'),
+### Changed
+- **Migrated the whole config from the from-scratch Windows setup to a
+  LazyVim-based config on Linux (Omarchy/Arch).** This is a platform lineage
+  switch, not an incremental edit — the previous tree (everything under
+  `lua/config/plugins/`, the nvim-cmp/mason wiring in `lsp.lua`, and the
+  Windows-specific `bootstrap-device.ps1`) is replaced by the LazyVim starter
+  (v8) layout with custom specs under `lua/plugins/`. The old Windows config
+  remains untouched on the `master` branch.
+- **Rust tooling: hand-rolled `lsp.lua` → LazyVim's `lang.rust` extra**
+  (rustaceanvim + rust-analyzer + crates.nvim + codelldb via Mason), plus a new
+  `lua/plugins/rustaceanvim.lua` override: clippy (`--no-deps`) as the on-save'''),
+    ...text('Note a disagreement. This entry says the old Windows config remains on the master branch, while the README says the previous config lives on the windows-legacy branch. Only one of them can describe the repository today, and the changelog entry is the older text.'),
+    ...text('Under 1.0.0 sit entries labelled Unreleased, Windows lineage, superseded by 1.0.0 on this branch. They are the final entries of the old line, such as replacing setup-onedrive-link.ps1 with a full device bootstrap, kept so the history of the earlier tree is not lost.'),
+    ...code('markdown', r'CHANGELOG.md · lines 724-730', r'''
+## [Unreleased — Windows lineage, superseded by 1.0.0 on this branch]
 
-    ...sec('what “verified” means in this file'),
-    ...text('Reading all the entries together, the evidence comes in '
-        'recognisable kinds, roughly from strongest to weakest.'),
-    ...bullet('an end-to-end run of the real thing',
-        'a real visual-mode request to 99 in two launch '
-        'directories; a real ESLint violation through the LSP; '
-        'a real clippy lint and a real unsaved type error '
-        'through bacon-ls.'),
-    ...bullet('a measurement with a stated condition',
-        '“warm”, “3-crate workspace”, “18-keystroke burst”, '
-        '“median”. The conditions are what make the numbers '
-        'usable.'),
-    ...bullet('an instrumented probe',
-        'counting notifications on the client, listing '
-        'extmarks, evaluating the statusline, reading hex '
-        'values from highlight groups, checking linkage with '
-        'readelf.'),
-    ...bullet('the dependency’s source',
-        'the changelog twice notes that a claim comes from '
-        'reading the plugin: mason-lspconfig’s handlers option '
-        'no longer exists (0.2.0, which means the custom '
-        'rust-analyzer handlers “were silently never called”), '
-        'and auto-save.nvim’s debounce semantics.'),
-    ...bullet('mechanism and documentation, flagged as such',
-        'for update_in_insert the entry says it is “verified by '
-        'mechanism/docs rather than a headless repro”.'),
-    ...text('That last category is the honest one. Twice the file '
-        'states what headless automation cannot do. For '
-        'lualine: startinsert does not perform a real mode '
-        'transition without an attached UI (vim.fn.mode() stays '
-        '“n”), so insert-mode text could not be checked the same '
-        'way, although the mechanism is identical for all '
-        'modes. For update_in_insert: the live-while-typing '
-        'behaviour could not be reproduced headlessly. A '
-        'changelog that says what it did not prove is more '
-        'believable about what it did.'),
-    ...code('md', 'CHANGELOG.md · Windows lineage, the lualine caveat (trimmed)', r'''
-  actual mode change (`normal! v`) evaluated via `nvim_eval_statusline`. Insert-mode text
-  couldn't be verified the same way — `startinsert` doesn't perform a real mode transition
-  in headless Neovim without an attached UI (confirmed separately: `vim.fn.mode()` stays
-  `"n"` after it), the same category of headless-simulation limitation noted elsewhere in
-  this log — but the underlying mechanism (lualine's `mode` component reads
-  `vim.fn.mode()` on every redraw) is identical for all modes, so this isn't a gap in the
-  fix, just in what headless automation can simulate.'''),
+### Changed
+- **`setup-onedrive-link.ps1` replaced by `bootstrap-device.ps1` — a full autonomous
+  device bootstrap, not just a link script.** Meant to be run from an elevated shell
+  directly off GitHub (`irm .../bootstrap-device.ps1 | iex`) on a clean machine, or one
+  with an existing config to replace. Every dependency this config actually needs is'''),
+    ...sec('0.2.0 and 0.1.0: where it started'),
+    ...text('The two oldest sections describe the initial config. 0.1.0 is the first push of 2026-08-17 (commit 1c496fd): a minimal Neovim configuration for Rust, Node and TypeScript, PowerShell and Flutter, plus the 99 plugin on Claude Code.'),
+    ...code('markdown', r'CHANGELOG.md · lines 939-945', r'''
+## [0.1.0] — initial commit
 
+First push. Bootstrapped from scratch (inspired by, not cloned from, ThePrimeagen's
+init.lua), scoped to Rust / Node+TypeScript / PowerShell / Flutter+Dart plus 99 on
+Claude Code.
 
-    ...sec('where the file and the repository disagree'),
-    ...text('The changelog is history, so the older entries are '
-        'allowed to describe things that no longer exist. A few '
-        'places go further than history and are simply stale or '
-        'inconsistent.'),
-    ...bullet('the old branch is called master here',
-        'the 1.0.0 entry and the eabb22a commit message say the '
-        'old Windows config stays on master. The README links '
-        'the windows-legacy branch, and the remote lists exactly '
-        'two branches, main and windows-legacy, with '
-        'windows-legacy at 9fff81e. Nothing in the clone shows '
-        'when or why the branch got its new name.'),
-    ...bullet('1.0.0 describes rustaceanvim.lua as it was',
-        'clippy as the on-save check command and push '
-        'diagnostics with style lints. Today’s file has neither: '
-        '1.1.0 removed both blocks, and 1.3.0 re-enabled '
-        'diagnostics without the style lints. Anyone checking '
-        '1.0.0 against HEAD will find it wrong, because the '
-        'entries are meant to be read forward.'),
-    ...bullet('didSave', 'see the 1.1.0 section above.'),
-    ...bullet('the patched build’s location',
-        '1.4.0 gives ~/.local/src/bacon-ls-0.29.0-patched; '
-        '1.4.1 and the Lua give ~/.local/src/bacon-ls-upstream.'),
-    ...bullet('two latency numbers',
-        '1.3.0’s 155–235 ms and 1.4.0’s “error tier 0.68s”, as '
-        'discussed above.'),
+- lazy.nvim, Telescope, Treesitter + treesitter-context (lua, vim, vimdoc, query, rust,'''),
+    ...text('0.2.0 adds the first IDE-like touches: background auto-save (with the okuuva fork because the original plugin is unmaintained since 2024-05) and styled inline diagnostics. The auto-save entry already shows the later style of the file, with a stated verification.'),
+    ...code('markdown', r'CHANGELOG.md · lines 909-915', r'''
+## [0.2.0]
 
-    ...sec('limits of the record'),
-    ...bullet('evidence lives outside the repo',
-        'the 35-check suite (~/.bacon-e2e/), the patched source '
-        '(~/.local/src/bacon-ls-upstream), the cargo config and '
-        'bacon prefs are all in the author’s home directory. The '
-        'entries describe them; the repository cannot reproduce '
-        'them.'),
-    ...bullet('one machine',
-        'every figure comes from the author’s one Linux machine. '
-        'None is a benchmark run with repeated trials, and none '
-        'comes with variance.'),
-    ...bullet('no hashes, no dates finer than a day',
-        'the file does not cite commits, and its dates are '
-        'calendar days. The mapping to commits in this page was '
-        'recovered from git log and the diffs of CHANGELOG.md.'),
-    ...bullet('a few headings carry no date',
-        '0.1.0 and 0.2.0, and the Unreleased Windows block.'),
-    ...bullet('it records, it does not test',
-        'the repository contains no test directory or CI '
-        'configuration. The changelog’s verification claims '
-        'cannot be re-run from a clone.'),
-
-    ...sec('what to take from it'),
-    ...bullet('write the symptom, the cause, the change, the check',
-        'in that order. The cause is what the next person '
-        'needs, and the check is what makes the entry believable.'),
-    ...bullet('record the dead ends',
-        'the ./tmp attempt in 1.2.0, the 800 ms debounce in '
-        '1.4.0, the vim.cmd proxy in df3c5ae. They are cheap to '
-        'write and they stop someone repeating them.'),
-    ...bullet('state the limits of your own testing',
-        'headless Neovim cannot enter insert mode; the entry '
-        'says so, and says why that is not a hole in the fix.'),
-    ...bullet('put the version bump in the commit',
-        '17 of 20 commits carry their own explanation, which is '
-        'why the history can be reconstructed from the file '
-        'afterwards.'),
+### Added
+- `auto-save.nvim` (`okuuva` fork — the original `Pocco81/auto-save.nvim` has been
+  unmaintained since 2024-05) for background auto-save, as in the JetBrains IDEs. Configured with
+  `noautocmd = true` so debounced autosaves don't also trigger format-on-save; only a
+  manual `:w`/`<leader>f` formats. Verified: an intentionally mis-formatted file survives'''),
+    ...sec('design decisions in the file itself'),
+    ...bullet('Newest first', 'the reader who wants to know what changed lately never scrolls; the reader who wants the origin of a behaviour searches for the file name or the symptom.'),
+    ...bullet('Root causes, not symptoms', 'entries such as bacon_ls stuck on checking and 99 responses always empty are written as small postmortems and make the later documents shorter.'),
+    ...bullet('Verified and not verified', 'many entries end by saying what was run (headless checks, tmux, a real rust-analyzer) and what was not (a live Omarchy theme switch, a real terminal for pickers).'),
+    ...bullet('History is kept, not rewritten', 'superseded entries stay, with a note that they are history (egui toolchain, Omarchy wording), so the file records how decisions changed.'),
+    ...bullet('Not a release log', 'most entries describe a day of work, not a tagged artefact; the version headings are checkpoints.'),
+    ...sec('how it is tested'),
+    ...text('The changelog is not parsed by a spec of its own, but claims about it are checked. tests/test-infra-readme-claims_spec.lua asserts statements the README and CHANGELOG make about the test infrastructure, and tests/site_spec.lua checks that the README, which the changelog supports, agrees with the website. The staleness of numbers inside old entries is intentional and is not tested.'),
+    ...sec('history'),
+    ...bullet('2026-08-17', 'CHANGELOG.md first appears in 3dacffb, the same day as the initial commit, together with the IDE-like diagnostics, auto-save and the 99 model bump.'),
+    ...bullet('2026-10-13', '1.8.0, the last numbered release.'),
+    ...bullet('2026-10-22', '9723a11 (Changelog: record the positioning and SEO work), 764702c (Site: plugin specs, README, DETAILS and CHANGELOG) and 2d4445e (Counts: re-measured with the plugin specs) are the latest edits.'),
     blank,
-    link('→ github.com/XNash/xynovim', 'https://github.com/XNash/xynovim'),
   ],
 );

@@ -5,15 +5,15 @@ final Buffer page = makePage(
   'xynovim/lazy-lock.json',
   lines: [
     cm('//', '──────────────────────────────────────────'),
-    cm('//', 'lazy-lock.json — 58 commit hashes that define “works here”'),
+    cm('//', 'lazy-lock.json — 61 commit hashes that define “works here”'),
     cm('//', 'written by lazy.nvim, read by every fresh install'),
     cm('//', '──────────────────────────────────────────'),
     blank,
     kv('role', 'exact git commit of every installed plugin'),
     kv('language', 'JSON, one plugin per line, written by lazy.nvim'),
-    kv('size', '60 lines, 58 plugins'),
-    kv('history', '8 commits, 2026-08-17 to 2026-09-03'),
-    kv('last change', '07993a4: added blink.compat'),
+    kv('size', '63 lines, 61 plugins'),
+    kv('history', '17 commits, 2026-08-17 to 2026-10-13'),
+    kv('last change', 'e874f9f (2026-10-13): the 18 Omarchy theme entries removed'),
 
     ...sec('what pinning means here'),
     ...para('//',
@@ -31,7 +31,7 @@ final Buffer page = makePage(
 {
   "99": { "branch": "master", "commit": "c17422457027c913c76c75a921fca1e623d2678e" },
   "LazyVim": { "branch": "main", "commit": "c10948c50b18fae7f256433afdef09e432410480" },
-  "aether": { "branch": "v3", "commit": "567efb778534e11ee1072d4fe27178f705a27d8a" },
+  "SchemaStore.nvim": { "branch": "main", "commit": "31626d9d0a95418bf12a8b3f0e8f9f42e73e1f35" },
   ...
   "harpoon": { "branch": "harpoon2", "commit": "87b1a3506211538f460786c23f98ec63ad9af4e5" },
   "lazy.nvim": { "branch": "main", "commit": "85c7ff3711b730b4030d03144f6db6375044ae82" },
@@ -61,9 +61,8 @@ final Buffer page = makePage(
         'first two entries look out of place.'),
     ...pt('//', 'keys are plugin names, not repositories',
         'the key is plugin.name. Where a spec sets an explicit '
-        'name, the key follows it: "aether", "catppuccin" and '
-        '"rose-pine" are explicit names in lua/plugins/all-themes.lua, '
-        'while "tokyonight.nvim" is the repository name.'),
+        'name, the key follows it. Several keys carry no .nvim suffix, '
+        'for example harpoon, neogen, treesj and catppuccin.'),
     ...pt('//', 'local plugins are skipped',
         'a plugin loaded from a local directory has no commit to '
         'record. The first version of this repository used two '
@@ -88,41 +87,27 @@ final Buffer page = makePage(
         'README.md and the comment in lua/config/lazy.lua both '
         'name it as the way to update.'),
 
-    ...sec('what is in the 58'),
+    ...sec('what is in the 61'),
     ...para('//',
-        'Counting from the file against lua/plugins/all-themes.lua:'),
-    ...pt('//', '20 colorschemes',
-        'more than a third of the lockfile. all-themes.lua '
-        'declares 20 theme plugins so that every theme Omarchy '
-        'can switch to is already installed and the hot reload in '
-        'omarchy-theme-hotreload.lua never has to download one. '
-        'Each of the 20 is pinned like any other plugin.'),
-    ...pt('//', '38 everything else',
-        'LazyVim and its core (snacks.nvim, blink.cmp, '
-        'conform.nvim, nvim-lspconfig, mason, treesitter and '
-        'textobjects, which-key, gitsigns, flash, trouble and so '
-        'on), plus the plugins this repository adds: '
-        'rustaceanvim and crates.nvim from the Rust extra, '
-        'neo-tree, auto-save.nvim, harpoon, 99 and blink.compat.'),
+        'There is no theme plugin of this repository in the file: the '
+        'island theme is Lua inside the repository itself (lua/island). '
+        'Only catppuccin and tokyonight.nvim are left, because LazyVim '
+        'ships them.'),
     ...pt('//', 'branches',
-        '44 entries sit on main, 12 on master, one on harpoon2 '
-        '(harpoon) and one on v3 (aether). The last two are '
-        'explicit branch settings in the plugin specs.'),
+        '44 entries sit on main, 16 on master and one on harpoon2 '
+        '(harpoon), which is an explicit branch setting in its spec.'),
+    ...pt('//', 'the repository’s additions',
+        'beyond LazyVim and its core: rustaceanvim and crates.nvim from the '
+        'Rust extra, neo-tree, auto-save.nvim, harpoon, 99 and blink.compat, '
+        'and since 2026-10-09 diffview, nvim-dap with nvim-dap-ui and '
+        'virtual-text, neotest, nvim-coverage, overseer, kulala, '
+        'claudecode, inc-rename, neogen, navic, treesitter-context, '
+        'satellite, treesj, mini.surround and markdown-preview.'),
     ...pt('//', 'a dependency you can see',
         'telescope.nvim is in the lock even though LazyVim 16 uses '
         'snacks as its picker. It is here because lua/plugins/'
         'ninety-nine.lua lists telescope as a dependency and uses '
         'its model and provider pickers.'),
-    ...para('//',
-        'Two entries explain themselves through the code that '
-        'created them. “aether” has a branch of v3 and a name of '
-        '“aether” because the comment in all-themes.lua records '
-        'that a bare spec built the cache into lazy/aether.nvim '
-        'while Omarchy 4’s generated spec renamed it to '
-        'lazy/aether, a directory that did not exist yet. That cost '
-        'a network clone on first launch and a fallback to '
-        'tokyonight until the editor restarted. The lock key is the '
-        'visible trace of that fix.'),
 
     ...sec('how the file grew'),
     ...para('//',
@@ -136,15 +121,14 @@ final Buffer page = makePage(
         '2026-08-17 and 18.'),
     ...pt('//', '99bdcbc, 2026-08-18',
         '30 again: the rose-pine plugin was removed when the '
-        'Islands Dark port replaced it. It is back in the lock '
-        'today, as one of the 20 Omarchy themes.'),
+        'Islands Dark port replaced it.'),
     ...pt('//', 'eabb22a, 2026-09-02',
         'jumps to 57. The migration deleted 18 of the 30 entries '
         '(LuaSnip, nvim-cmp and its sources, toggleterm, '
         'undotree, fugitive, fidget, flutter-tools and others) '
         'and brought in LazyVim with everything it ships plus '
-        'the 20 themes. Only 12 names survive from the old '
-        'lock; 7 of them kept the very same commit.'),
+        'twenty theme plugins for the Omarchy switcher. Only 12 names survive from the old '
+        'lock; 8 of them kept the very same commit.'),
     ...pt('//', '3ec11c4, 2026-09-03',
         'still 57, but 7 pins moved: aether, mason-lspconfig, '
         'neo-tree, nvim-lint, nvim-lspconfig, nvim-treesitter '
@@ -154,12 +138,26 @@ final Buffer page = makePage(
     ...pt('//', '07993a4, 2026-09-03',
         '58. blink.compat, the one new plugin the 99 completion '
         'fix needed.'),
+    ...pt('//', 'b81fd48, 2026-10-09',
+        '67: roadmap step 2 added SchemaStore.nvim, markdown-preview, '
+        'mason-nvim-dap, neotest, nvim-dap and the other debug and test '
+        'dependencies; monokai-pro.nvim is dropped in the same commit.'),
+    ...pt('//', '10cb8c8 and da5ede9, 2026-10-09',
+        '68 (diffview, step 6), then 75 (step 7: inc-rename, mini.surround, '
+        'neogen, nvim-navic, treesitter-context, satellite, treesj).'),
+    ...pt('//', 'five “wip” commits, 2026-10-09',
+        '76, 77, 77, 77 and 79 entries: claudecode.nvim, kulala.nvim and '
+        'nvim-coverage arrive, and monokai-pro.nvim, dropped in b81fd48, comes back in the last of them.'),
+    ...pt('//', 'e874f9f, 2026-10-13',
+        '61. Remove Omarchy support deleted 18 theme entries (aether, '
+        'ashen, bamboo, ethereal, everforest, flexoki, gruvbox, hackerman, '
+        'kanagawa, lumon, matteblack, miasma, monokai-pro, nightfox, '
+        'retro-82, rose-pine, vantablack, white) and nothing else of '
+        'substance; which-key.nvim appears as a moved line.'),
     ...para('//',
-        'No later commit touches the file, including the four '
-        'that changed bacon-ls and the startup behaviour. That '
-        'is the pin doing its job: the plugin set under test did '
-        'not move while the measurements in CHANGELOG 1.3.0 and '
-        '1.4.0 were taken.'),
+        'The file has not changed since, through the 2026-10-22 commits '
+        'that extracted the standalone plugins; those are not lazy.nvim '
+        'dependencies of this configuration.'),
 
     ...sec('what this file lets the rest of the repository claim'),
     ...para('//',
@@ -178,13 +176,10 @@ final Buffer page = makePage(
     ...para('//',
         'The lock covers plugin source and nothing else. Outside '
         'it, and outside this repository, sit:'),
-    ...pt('//', 'the bacon-ls binary',
-        'a local build of upstream 0.30.0 plus a pull-request '
-        'branch, installed with cargo into ~/.cargo/bin, found '
-        'through a hard-coded path in lua/plugins/bacon-ls.lua.'),
     ...pt('//', 'Mason packages',
         'mason.nvim is pinned, the tools it installs (codelldb '
-        'from the Rust extra, for instance) are not.'),
+        'from the Rust extra, and bacon-ls, which the spec requires at '
+        '0.31.0 or newer) are not.'),
     ...pt('//', 'rust-analyzer, mold, clang',
         'expected on PATH or in pacman, per the README.'),
     ...pt('//', 'Neovim itself',
@@ -203,14 +198,16 @@ final Buffer page = makePage(
     ...sec('limits'),
     ...pt('//', 'no verification of the lock',
         'nothing installs the lockfile on a clean machine and '
-        'runs the editor to prove it works. The 58 hashes have '
-        'been exercised only on the machine that wrote them.'),
+        'runs the editor to prove it works in the file itself. scripts/'
+        'bootstrap.sh and tests/health-bootstrap-ci_spec.lua use a '
+        'copy of the lockfile in a temp checkout, but the 61 hashes '
+        'have been exercised only on the machine that wrote them.'),
     ...pt('//', 'hashes say nothing about intent',
         'to learn why a plugin is where it is you read the '
-        'commit that moved it. Of the 8 commits touching the '
-        'file, 7 give no reason for individual pin changes.'),
+        'commit that moved it. Several commits that touch the file '
+        'are titled only “wip”.'),
 
     blank,
-    link('→ github.com/XNash/xynovim', 'https://github.com/XNash/xynovim'),
+    link('→ github.com/xynorash/xynovim', 'https://github.com/xynorash/xynovim'),
   ],
 );

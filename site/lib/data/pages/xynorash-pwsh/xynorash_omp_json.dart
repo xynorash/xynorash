@@ -5,31 +5,31 @@ final Buffer page = makePage(
   'xynorash-pwsh/xynorash.omp.json',
   lines: [
     cm('//', '──────────────────────────────────────────'),
-    cm('//', r'xynorash.omp.json — the prompt, written as data'),
-    cm('//', r'three blocks, fifty segments, eleven colours and a contract with the profile'),
+    cm('//', r'xynorash.omp.json — the cockpit as data'),
+    cm('//', r'three blocks, fifty segments, nine colours'),
     cm('//', '──────────────────────────────────────────'),
     blank,
-    kv(r'role', r'the oh-my-posh theme: what the prompt looks like'),
-    kv(r'format', r'oh-my-posh JSON config, format version 4'),
-    kv(r'size', r'374 lines, 3 blocks, 50 segments (5 + 41 + 4)'),
-    kv(r'palette', r'11 distinct colour literals, 64 uses, no variables'),
-    kv(r'history', r'2 commits: 370 lines at birth, +4 net in the battery fix'),
-    kv(r'checked', r'rendered with oh-my-posh 29.0.0, 29.35.0, 31.5.0 (Linux)'),
+    kv(r'role', r'the prompt theme: layout, colours and every segment'),
+    kv(r'language', r'JSON (oh-my-posh config, schema version 4)'),
+    kv(r'size', r'374 lines, 3 blocks, 50 segments, 9 colours'),
+    kv(r'history', r'2 commits, 370 lines at birth, +6 −2 in the fix'),
+    kv(r'reads', r'SSH_CLIENT and seven XYNO_* variables'),
+    kv(r'written by', r'profile.ps1, in the prompt wrapper'),
+    kv(r'tested', r'by hand, on a real machine'),
     ...sec(r'why this file exists'),
-    ...para('//', r'A prompt is the one piece of interface you see after every command, so ' r'this theme tries to answer the questions you would otherwise type a ' r'command to ask: where am I, what state is the repository in, what is ' r'this project written in, is the machine healthy, how long did that ' r'take and did it work. The answers are split over three lines by how ' r'often they change. The README draws the result:'),
-    ...code('text', r'README.md · the layout sketch', r'''
-╭─ 󰍲 user@host ~/path/here ▸  main ~2 +1 ▸
-│  󰍛 12% ▸ 󰘚 47% ▸ 󰋊 C:48% ▸ 󰋊 F:27% ▸ ⬆ 1d 4h ▸ 󰩟 192.168.1.x ▸ 󰄹 312 ▸
-╰─ Mon 07 Jun  23:41 ❯'''),
-    ...para('//', r'Line one is identity and place. Line two is context and vitals: ' r'language versions for the project you are in, then the machine. Line ' r'three is the input line, with timing, the clock and the success ' r'symbol. After Enter the whole thing collapses to one glyph (the ' r'transient prompt), so scrollback stays a list of commands. Everything ' r'is declarative. The theme contains no code; it is a list of segments, ' r'each with a type, a colour and a template. The only imperative part is ' r'in profile.ps1, which computes the numbers oh-my-posh has no built-in ' r'segment for and hands them over as XYNO_ environment variables. This ' r'file is the other half of that contract. The page also records an ' r'experiment. The theme was rendered with the oh-my-posh binary itself ' r'(its print command, versions 29.0.0, 29.35.0 and 31.5.0 on Linux, with ' r'the XYNO_ variables set by hand and small throw-away git repositories ' r'as the working directory). The Windows-only pieces (the battery chip, ' r'the Windows icon) could not be exercised, but most of the rest could, ' r'and the results change a few claims a reader would otherwise take on ' r'trust.'),
-    ...sec(r'the top of the file'),
-    ...code('json', r'xynorash.omp.json · lines 2-15', r'''
+    ...para('//', r'This is the whole look of the prompt, as data. oh-my-posh reads it, asks each segment for its text and colour, and prints the result before every command. Nothing in it is executed by PowerShell: it is a description of what the prompt should show. That separation is the point. profile.ps1 decides when and how numbers are computed, and this file decides where they appear and what colour they get. The two never call each other. They share only the names of environment variables, and a segment that finds its variable unset prints nothing.'),
+    ...para('//', r'The file is 374 lines for a prompt that is three lines tall, because oh-my-posh wants one JSON object per segment and the project has 50 of them: 5 in the first block, 41 in the second, 4 in the third. Most of the length is a single repeated shape, the language detector, which is why this page spends its time on the five shapes that matter and treats the rest as a table.'),
+    ...sec(r'the header: what kind of prompt this is'),
+    ...code('json', r'xynorash.omp.json · lines 2-7', r'''
   "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
   "version": 4,
   "final_space": true,
   "blank_line_before_prompt": true,
   "disable_notice": true,
-  "shell_integration": true,
+  "shell_integration": true,'''),
+    ...para('//', r'version 4 is the schema version of the oh-my-posh configuration format; $schema gives editors the URL to validate against. final_space leaves a space after the last segment so typed text does not touch the prompt symbol. blank_line_before_prompt puts an empty line between one command’s output and the next prompt, which is what keeps three-line prompts from running into each other. disable_notice silences the update notice oh-my-posh would otherwise print into the middle of the prompt. shell_integration turns on oh-my-posh’s shell-integration option; the file does not say which terminal features it is meant for.'),
+    ...sec(r'the transient prompt'),
+    ...code('json', r'xynorash.omp.json · lines 8-15', r'''
   "transient_prompt": {
     "foreground": "#00E5AA",
     "foreground_templates": [
@@ -38,13 +38,13 @@ final Buffer page = makePage(
     "background": "transparent",
     "template": "{{ if gt .Code 0 }}✗{{ else }}❯{{ end }} "
   },'''),
-    ...pt('//', r'$schema and version', r'the schema URL gives editors completion; version 4 is the ' r'config-format version, not the program’s. The battery fix names ' r'oh-my-posh v29 as the engine in use.'),
-    ...pt('//', r'shell_integration', r'documented as FinalTerm OSC sequences. The rendered prompt does begin ' r'with OSC 133 marks (ESC ] 133 ; D ; 0, then ESC ] 133 ; A), which let ' r'a terminal that understands them know where each prompt starts.'),
-    ...pt('//', r'transient_prompt', r'what a finished prompt is replaced with: a mint arrow, or an orange ' r'cross when the exit code was above zero. One template serves both ' r'cases, and the foreground has a template of its own for the failure ' r'colour.'),
-    blank,
-    ...para('//', r'Two other keys, blank_line_before_prompt and disable_notice, are ' r'covered under "keys that do nothing" below.'),
-    ...sec(r'line one: identity and place'),
-    ...code('json', r'xynorash.omp.json · os and session segments', r'''
+    ...para('//', r'After a command is submitted, oh-my-posh redraws the old prompt using this block instead of the three blocks below. The template is the entire policy: a cross when the exit code is above zero, a chevron otherwise, both followed by a space. The colour follows the same test through foreground_templates, so the default green #00E5AA turns orange #FF6432 for a failure. The background is transparent so the terminal’s own background shows through. The result is a history in which every finished command is one symbol wide and a failure is visible at a glance. The transient prompt needs a key handler to work in PowerShell; profile.ps1 installs it by calling Enable-KeyHandlers right after oh-my-posh init.'),
+    ...sec(r'block 1: identity and location'),
+    ...code('json', r'xynorash.omp.json · lines 17-35', r'''
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "segments": [
         {
           "type": "os",
           "style": "plain",
@@ -60,8 +60,8 @@ final Buffer page = makePage(
           "foreground": "#00E5AA",
           "template": "{{ if env \"SSH_CLIENT\" }}<#FFAA00>󰢩 </>{{ end }}<#FF3296>{{ .UserName }}</>{{ if env \"XYNO_IS_ADMIN\" }}<#FF4488> 󰒃</>{{ end }}<#555>@</>{{ .HostName }} "
         },'''),
-    ...para('//', r'Every segment uses the plain style: no powerline arrows, no background ' r'fills. The colours do the work and the separators are literal ' r'characters in the templates (▸ between chips, ╭─ │ ╰─ down the left ' r'edge), which keeps the prompt legible on any background and easy to ' r'copy from scrollback. The os segment prints the box-drawing corner ' r'that opens the prompt and then the operating-system icon. The session ' r'segment is the busiest template in the block: an SSH glyph if ' r'SSH_CLIENT exists, the user name in hot pink, a shield if ' r'XYNO_IS_ADMIN is set, a grey @, then the host name. Each marker ' r'appears only when it is relevant, so a normal local session shows ' r'nothing extra and an elevated or remote one is hard to miss. With ' r'XYNO_IS_ADMIN=1 set by hand, the rendered prompt did show the shield ' r'after the user name.'),
-    ...code('json', r'xynorash.omp.json · path segment', r'''
+    ...para('//', r'A block is a group of segments printed together; all three here are left aligned, and the second and third set newline so they stack. The first segment prints the box corner and an operating-system icon, and the only icon configured is the one for windows, which is what the project is for. The session segment is a single template with three conditions. If SSH_CLIENT is set it prints a marker, in amber. It prints the user name in pink. If XYNO_IS_ADMIN is set it adds a shield glyph. It prints a dim @ and the host name. SSH_CLIENT is set by the OpenSSH server; XYNO_IS_ADMIN is not a Windows variable but one set by profile.ps1 once at start-up, because a process cannot change elevation while it runs. This is the first of many places where the theme reads a value that the profile computed.'),
+    ...code('json', r'xynorash.omp.json · lines 36-47', r'''
         {
           "type": "path",
           "style": "plain",
@@ -74,9 +74,9 @@ final Buffer page = makePage(
             "truncation_symbol": "…/"
           }
         },'''),
-    ...para('//', r'The agnoster_short style with a depth of 3 keeps the first folder, an ' r'elision marker and the last three folders. A deep directory rendered ' r'as tmp/../scratchpad/pwsh_work/tr_clean. Note the two dots: the ' r'truncation_symbol set here (…/) is not what the engine used, the first ' r'hint that the property is not recognised. The folder separator is a ' r'plain slash, which is the documented default, so that line is a no-op.'),
-    ...sec(r'the git chip, and the experiment that broke it'),
-    ...code('json', r'xynorash.omp.json · git segment (trimmed)', r'''
+    ...para('//', r'The path segment uses the agnoster_short style: a short form that keeps the leaf folder whole and abbreviates the ones above. max_depth of 3 limits it to three folders, and truncation_symbol shows the cut as …/ so a deep directory never takes over the line.'),
+    ...sec(r'the git segment: colour as state'),
+    ...code('json', r'xynorash.omp.json · lines 48-60', r'''
         {
           "type": "git",
           "style": "plain",
@@ -85,17 +85,20 @@ final Buffer page = makePage(
             "{{ if gt .Working.Changed 0 }}#FFAA00{{ end }}",
             "{{ if and (eq .Working.Changed 0) (gt .Staging.Changed 0) }}#00E5AA{{ end }}"
           ],
-... {{ if gt .Working.Changed 0 }} <#FF6432>~{{ .Working.Changed }}</>{{ end }}{{ if gt .Staging.Changed 0 }} <#FF3296>+{{ .Staging.Changed }}</>{{ end }} ...
+          "template": "▸  {{ .HEAD }}{{ if gt .Ahead 0 }} ⇡{{ .Ahead }}{{ end }}{{ if gt .Behind 0 }} ⇣{{ .Behind }}{{ end }}{{ if gt .Working.Changed 0 }} <#FF6432>~{{ .Working.Changed }}</>{{ end }}{{ if gt .Staging.Changed 0 }} <#FF3296>+{{ .Staging.Changed }}</>{{ end }}{{ if gt .Working.Untracked 0 }} <#FF3296>?{{ .Working.Untracked }}</>{{ end }}{{ if gt .StashCount 0 }} <#FFC832>󰆓{{ .StashCount }}</>{{ end }} ",
           "properties": {
             "fetch_status": true
           }
         },'''),
-    ...para('//', r'The design is good. The chip is violet; with unstaged work it turns ' r'amber; when everything that changed is staged it turns mint. Counts ' r'show only when non-zero: commits ahead and behind, modified files, ' r'staged files, untracked files, the stash. The second colour test ' r'spells out that the working tree must be clean, so it does not rely on ' r'the order in which the tests are tried. It does not work as written. ' r'The README sketch shows ~2 +1, but in the rendering experiment those ' r'indicators and the colour change never appeared. A repository with one ' r'modified file and another with one staged file both rendered a violet ' r'chip with only the branch name; only the untracked count (?1, in hot ' r'pink) and the stash count showed. A probe template pointed at the same ' r'repositories gives the reason, one line each:'),
-    plain(r'changed=true modified=1 staged=false/0 gt=no     (one modified file)'),
-    plain(r'changed=false modified=0 staged=true/1 gt=no     (one staged file)'),
-    ...para('//', r'The probe printed .Working.Changed, .Working.Modified, ' r'.Staging.Changed, .Staging.Modified and the result of gt ' r'.Working.Changed 0. Changed is a boolean, not a count: it prints true ' r'or false, and a boolean is never greater than zero. The documentation ' r'says the same (the boolean "if the status contains changes or not") ' r'and puts the counts in Modified, Added, Deleted, Untracked and ' r'Unmerged. All three engine versions behaved identically. It is the ' r'same family of mistake as the battery bug below: a template that ' r'assumes a field’s type. The fix is small: use the boolean as the ' r'condition for the colours and print .Working.Modified and ' r'.Staging.Modified for the numbers. Until then the amber and mint ' r'states and the ~ and + counters are dead code, and the README should ' r'not promise them.'),
-    ...sec(r'line two: the language chips'),
-    ...code('json', r'xynorash.omp.json · the first two language chips', r'''
+    ...para('//', r'fetch_status is on, which makes oh-my-posh ask git for the working-tree and staging counts the template uses; without it .Working.Changed and friends would be empty. The colour chain in foreground_templates is read in order and the first template that outputs a colour wins. Amber when there are unstaged changes. Green when the working tree is clean and something is staged. When both fail the static foreground, violet #AA00FF, applies. The text template builds the line from the branch (.HEAD) and then optional pieces, each wrapped in if gt N 0 so it vanishes at zero: ahead and behind arrows, ~ for modified, + for staged, ? for untracked, a glyph for stashes. A clean repository therefore shows only its branch name.'),
+    ...para('//', r'The segment closes with a literal dim ▸ in its own text segment (lines 61-66). Every segment on the second line does the same with a trailing ▸ inside its own template, which makes the line read as a chain of fields.'),
+    ...sec(r'block 2: the language detectors'),
+    ...code('json', r'xynorash.omp.json · lines 69-85', r'''
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "newline": true,
+      "segments": [
         {
           "type": "text",
           "style": "plain",
@@ -107,54 +110,35 @@ final Buffer page = makePage(
           "style": "plain",
           "foreground": "#FF6432",
           "template": " 󱘗 {{ .Full }} ▸"
-        },
+        },'''),
+    ...para('//', r'The second block opens with a vertical bar so the three lines look like one frame, then lists the detectors. A detector is an oh-my-posh segment type (rust, java, dotnet, flutter, dart, node, python, go and so on). It appears only when the current directory holds a project of that kind, for example a Cargo.toml for rust, and then shows the tool’s version through .Full. There are 32 of them, from rust to buf. They are listed in a deliberate order: rust, java, dotnet, flutter and dart come first and have their own colours (orange, yellow, violet, green, green), and from node onward every detector is cyan #00E5FF.'),
+    ...code('json', r'xynorash.omp.json · lines 86-91', r'''
         {
           "type": "java",
           "style": "plain",
           "foreground": "#FFC832",
           "template": " ☕ {{ .Full }} ▸"
         },'''),
-    ...para('//', r'Line two opens with a cyan bar and 32 language segments. Each detects ' r'its project files in the current directory and, if it finds them, runs ' r'the toolchain to read a version and prints it with {{ .Full }}. ' r'Elsewhere it prints nothing, so the line stays short. A directory with ' r'a Cargo.toml, a package.json and a main.go rendered an orange Rust ' r'chip (1.97.0), then cyan Node (22.22.0) and Go (1.24.7) chips, each ' r'with its icon. Five segments have colours of their own (Rust orange, ' r'Java yellow, .NET violet, Flutter and Dart mint); the other 27 share ' r'cyan. Chips are chained with a leading space and a trailing ▸, so any ' r'combination reads as one list. Two defects came out of the checks.'),
-    blank,
-    ...pt('//', r'eleven chips have no icon', r'elixir, erlang, julia, perl, scala, ocaml, quasar, elm, v, bazel and ' r'buf have templates that start with two spaces and go straight to {{ ' r'.Full }}. The Elixir chip, rendered with a stand-in elixir command, ' r'printed two spaces and 1.16.0, with a blank where the glyph belongs. ' r'Every icon that survived in the repository is in the supplementary ' r'private-use range (U+F0000 and above, the Material Design set of Nerd ' r'Fonts 3); none is in the older range U+E000 to U+F8FF, where Devicons ' r'and the Powerline symbols live. That fits a copy or generation step ' r'that dropped the older range and kept the rest. The repository does ' r'not record the cause.'),
-    ...pt('//', r'three chips do not exist', r'erlang, scala and elm are not segment types in the oh-my-posh source ' r'and schema that were checked. A directory with elm.json, build.sbt and ' r'rebar.config and stand-in commands on the path rendered no Erlang, ' r'Scala or Elm chip while the Elixir control did (only a Java chip ' r'appeared beside it). Unknown types are skipped without a message.'),
-    ...code('json', r'xynorash.omp.json · a chip with no icon', r'''
-        {
-          "type": "elixir",
-          "style": "plain",
-          "foreground": "#00E5FF",
-          "template": "  {{ .Full }} ▸"
-        },'''),
-    ...para('//', r'The git branch icon, by contrast, is not missing: the engine prepends ' r'it to the head value, and the rendered chip began with the Powerline ' r'branch glyph (U+E0A0).'),
-    ...sec(r'line two: the vitals'),
-    ...code('json', r'xynorash.omp.json · CPU, RAM and the two disks', r'''
+    ...para('//', r'The shape never varies: a type, style plain, a foreground, and a template of the form space, glyph, space, .Full, space, ▸. Because plain-style segments have no background or powerline separators, adding a language costs seven lines and no design decision. Whether 32 detectors cost anything at run time is not something this file can show; what it shows is the cost in length.'),
+    ...sec(r'the vitals segments'),
+    ...code('json', r'xynorash.omp.json · lines 272-277', r'''
         {
           "type": "text",
           "style": "plain",
           "foreground": "#FFAA00",
           "template": "{{ if env \"XYNO_CPU\" }} 󰍛 {{ env \"XYNO_CPU\" }}% ▸{{ end }}"
-        },
+        },'''),
+    ...para('//', r'The vitals are a different shape from the detectors. A text segment prints no version; its template is an if env test around an environment variable. The pattern is the same for CPU (XYNO_CPU), the two disks (XYNO_DISK_C and XYNO_DISK_F), uptime (XYNO_UPTIME), the IP address (XYNO_IP) and the process count (XYNO_PROCS), each in its own colour. profile.ps1 writes those variables in the prompt wrapper, so every segment reads state that is at most one prompt old. When the variable is absent the segment is empty and the line closes up, which is how the theme still works on a machine where the profile has not loaded.'),
+    ...code('json', r'xynorash.omp.json · lines 278-283', r'''
         {
           "type": "sysinfo",
           "style": "plain",
           "foreground": "#FFAA00",
           "template": " 󰘚 {{ .PhysicalPercentUsed | printf \"%.0f\" }}% ▸"
-        },
-        {
-          "type": "text",
-          "style": "plain",
-          "foreground": "#EE00EE",
-          "template": "{{ if env \"XYNO_DISK_C\" }} 󰋊 C:{{ env \"XYNO_DISK_C\" }}% ▸{{ end }}"
-        },
-        {
-          "type": "text",
-          "style": "plain",
-          "foreground": "#EE00EE",
-          "template": "{{ if env \"XYNO_DISK_F\" }} 󰋊 F:{{ env \"XYNO_DISK_F\" }}% ▸{{ end }}"
         },'''),
-    ...para('//', r'This is where the theme meets profile.ps1. CPU, disk, uptime, IP and ' r'process count are text segments whose template is a single conditional ' r'on an environment variable. If the variable is absent the chip renders ' r'nothing and takes no space, so a missing profile layer removes chips ' r'and breaks nothing. Rendered with no XYNO_ variables at all, line two ' r'was the cyan bar plus the RAM chip, and lines one and three were ' r'unaffected. With the variables set by hand, line two matched the ' r'README sketch: 12%, 4%, C:48%, F:27%, ⬆ 1d 4h, an IP and 312 ' r'processes. Uptime, IP and process count follow the same pattern ' r'further down the file. RAM is the exception because it has its own ' r'segment: sysinfo exposes PhysicalPercentUsed, formatted with printf to ' r'zero decimals. The split follows cost, as far as the code shows: what ' r'the engine can read for free (memory, battery) stays in the theme; ' r'what needs a counter, a delta or a throttle (CPU, uptime, disks, IP, ' r'processes) is computed in the profile. The drive letters are in the ' r'template text, so the F: chip is specific to the author’s machine; ' r'elsewhere the variable never gets set and the chip is hidden.'),
-    ...sec(r'the battery bug, and its fix'),
-    ...code('json', r'xynorash.omp.json · battery segment', r'''
+    ...para('//', r'Memory is the one vital that oh-my-posh computes itself. The sysinfo segment exposes PhysicalPercentUsed and the template rounds it with printf %.0f to a whole number. The choice to use the built-in here and an environment variable for CPU is not explained in the file; the profile’s comment on its CPU reading says it avoids WMI and avoids sleeping, which is the constraint that made CPU a custom value.'),
+    ...sec(r'battery: the segment that broke'),
+    ...code('json', r'xynorash.omp.json · lines 296-311', r'''
         {
           "type": "battery",
           "style": "plain",
@@ -171,9 +155,20 @@ final Buffer page = makePage(
             "not_charging_icon": "󰁺"
           }
         },'''),
-    ...para('//', r'The first version, in the init commit, chose its icon inside the ' r'template by comparing the state with strings: if it equals Charging ' r'show one glyph, else if it equals Full another, else a third. It ' r'failed on every prompt with the engine’s "unable to create text based ' r'on template". The commit message of b9d3efd (2026-06-07, 23:52) gives ' r'the cause: .State is an enum in oh-my-posh v29, not a string. The ' r'documentation agrees that .State is a struct with a .String function. ' r'The fix moves the decision out of the template into the segment’s own ' r'properties. The engine already knows how to turn a state into an icon: ' r'set charged_icon, charging_icon, discharging_icon and ' r'not_charging_icon, print {{ .Icon }}, and the template never compares ' r'types. The threshold colouring stayed, a foreground template that ' r'makes the chip orange below 20 percent. Two limits. Discharging and ' r'not-charging share the same low-battery glyph, so the icon shows the ' r'state and the number carries the level. And the segment could not be ' r'exercised here, since it needs Windows; display_error is false (also ' r'the documented default) and the Linux runs, on a machine with no ' r'battery, rendered no battery chip.'),
-    ...sec(r'line three: time, clock and result'),
-    ...code('json', r'xynorash.omp.json · timing, clock and exit symbol', r'''
+    ...para('//', r'This is the segment that the second fix changed. It used to compare .State with strings, and in oh-my-posh v29 .State is an enum, so the template raised an error at run time. The commit message that records the fix says so in those words. The replacement uses .Icon, which the segment fills from the four icon properties: one for charged, one for charging, one for discharging, and one for not charging. display_error is false, so a desktop that has no battery shows nothing instead of an error. The colour has a single exception: below 20 percent the foreground becomes orange. Both discharging and not-charging map to the same glyph; the diff shows that and does not explain it.'),
+    ...sec(r'block 3: the input line'),
+    ...code('json', r'xynorash.omp.json · lines 332-371', r'''
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "newline": true,
+      "segments": [
+        {
+          "type": "text",
+          "style": "plain",
+          "foreground": "#00E5FF",
+          "template": "╰─ "
+        },
         {
           "type": "executiontime",
           "style": "plain",
@@ -201,28 +196,25 @@ final Buffer page = makePage(
           "properties": {
             "always_enabled": true
           }
-        }'''),
-    ...para('//', r'The execution-time segment is invisible for fast commands: a 500 ms ' r'threshold and the austin format. Rendered with 65,432 ms it printed 1m ' r'5.432s in orange; at 200 ms it printed nothing. (Both settings are the ' r'documented defaults, so they are written out for clarity.) The clock ' r'uses a Go time layout with two spaces before the hour. The exit ' r'segment is always_enabled, so the arrow shows on success too, and a ' r'foreground template turns it into an orange cross when the code is ' r'above zero: a mint arrow for status 0 and an orange cross for status 1 ' r'in the rendered output. The same condition is written again in the ' r'transient prompt at the top of the file; the two copies are kept in ' r'step by hand.'),
-    ...sec(r'eleven colours, sixty-four uses'),
-    ...para('//', r'The theme never defines a colour once. Counting every literal gives ' r'cyan #00E5FF 32 times, mint #00E5AA 6, orange #FF6432 6, amber #FFAA00 ' r'5, hot pink #FF3296 4, violet #AA00FF 3, magenta #EE00EE 3, yellow ' r'#FFC832 2, and single uses of #FF4488 (the admin shield), #555 (the @) ' r'and #444 (the separators). It reads as a system: cyan marks structure ' r'and neutral information, amber marks metrics, violet and pink mark ' r'identity and git, mint means fine and orange means attention (though ' r'orange also colours Rust and the timer, which blunts the signal a ' r'little). The same values are repeated in profile.ps1’s colour block, ' r'in the base profile’s colour block and, as decimal red-green-blue ' r'triples, in fastfetch/config.jsonc. The schema supports a palette ' r'table with named references and this theme does not use it, so ' r'changing the scheme means editing about sixty places in this file ' r'alone.'),
-    ...sec(r'keys that do nothing'),
-    ...para('//', r'Comparing the file with the engine’s published JSON schema and source ' r'at the time of writing (not the exact build the author had in June) ' r'turns up three entries that are not recognised:'),
-    blank,
-    ...pt('//', r'blank_line_before_prompt', r'not a top-level property. The rendered prompt starts with its ' r'shell-integration marks and no blank line of its own.'),
-    ...pt('//', r'disable_notice', r'not a property of the current schema either. The schema has an upgrade ' r'section instead, whose notice option defaults to false.'),
-    ...pt('//', r'truncation_symbol', r'not a property of the path segment, which is why the elision appears ' r'as two dots, the engine’s default.'),
-    blank,
-    ...para('//', r'Unrecognised keys are ignored, so none of this breaks the prompt. It ' r'does mean the lines read as if they configure something they do not, ' r'and a schema-aware editor would flag them.'),
-    ...sec(r'history, and what is not checked'),
-    ...pt('//', r'3690dee', r'2026-06-07, "init: core XYNORASH configuration": the whole theme, 370 ' r'lines.'),
-    ...pt('//', r'b9d3efd', r'2026-06-07 23:52, merged as 791cf8c: the battery template, four lines ' r'more.'),
-    blank,
-    ...para('//', r'The battery bug is the only defect the author found himself, within ' r'four minutes of the first commit, by using the prompt. There are no ' r'tests in the repository; the experiment above is the only evidence ' r'that the theme works, and it ran on Linux. It confirmed the XYNO_ ' r'contract, the language chips, the timer, the exit symbol and the ' r'transient prompt, and it found the git defect. It could not check the ' r'Windows icon, the battery chip, or what the glyphs look like in the ' r'real font. The picture on the author’s screen was never compared with ' r'the README sketch.'),
-    ...sec(r'what it teaches'),
-    ...pt('//', r'keep the engine dumb', r'the theme has no logic of its own; the profile computes, the theme ' r'prints, and a missing producer removes a chip instead of breaking the ' r'line.'),
-    ...pt('//', r'check types, not intentions', r'both real defects here (battery state, git change counts) are ' r'templates that assume a field’s type. Printing the field in a probe ' r'template takes one command and settles it.'),
-    ...pt('//', r'sketches are not screenshots', r'the README layout is a drawing of what was intended, and its git ' r'indicators do not render.'),
-    ...pt('//', r'make failures loud', r'eleven missing icons and three non-existent chips survived because ' r'every failure mode of this file is silent.'),
-    link(r'→ github.com/XNash/xynorash-pwsh', r'https://github.com/XNash/xynorash-pwsh'),
+        }
+      ]'''),
+    ...para('//', r'The last line has four parts. The closing corner. The command duration, which the executiontime segment prints only when the command took at least 500 ms (threshold) and formats in the austin style, so a quick command leaves no clutter. The clock, with a Go date layout, Mon 02 Jan  15:04, which prints something like Mon 07 Jun  23:41 as the README shows. And the exit symbol, a chevron or a cross with the same colour test as the transient prompt, always enabled so that it also shows after a successful command. The prompt symbol is therefore defined twice, in the live prompt and in the transient one, with identical logic, so the live line and the line it collapses into agree.'),
+    ...sec(r'the palette'),
+    ...para('//', r'There are nine distinct foreground colours in the file. Cyan #00E5FF is the workhorse, on 32 segments. Green #00E5AA appears on 4 and marks success. Violet #AA00FF, amber #FFAA00 and magenta #EE00EE appear on 3 each. Orange #FF6432 appears on 2 and marks trouble: a failed command, a low battery, a changed file, a slow command. One each go to a dark grey #444 for the separator, a yellow #FFC832 and a pink #FF3296. The same values appear in profile.ps1 (the syntax colours) and, in decimal form, in fastfetch/config.jsonc, which is why the three tools look like one product.'),
+    ...sec(r'design decisions and trade-offs'),
+    ...pt('//', r'data over code', r'nothing here runs PowerShell. A theme that only reads environment variables works under any shell that oh-my-posh supports, and the PowerShell-specific work lives in one file.'),
+    ...pt('//', r'plain style everywhere', r'no powerline backgrounds, so no font-dependent separators beyond the glyphs in the templates themselves, and colour carries all the meaning.'),
+    ...pt('//', r'guarded templates', r'every custom vital is wrapped in if env, so a missing producer is invisible rather than ugly.'),
+    ...pt('//', r'repetition accepted', r'32 near-identical detector objects are the price of a format with no loops. The alternative would be generating the file, which would add a build step to a repository that has none.'),
+    ...sec(r'edge cases'),
+    ...pt('//', r'no profile.ps1', r'the six custom vitals are empty and the line shows memory, battery and detectors.'),
+    ...pt('//', r'no battery', r'display_error false hides the segment cleanly.'),
+    ...pt('//', r'not a git repository', r'the git segment has no content and prints nothing; the trailing ▸ segment still prints, so a stray separator remains after the path.'),
+    ...pt('//', r'narrow terminal', r'the second block can grow very long in a repository that triggers several detectors; the file sets no wrapping or truncation for it.'),
+    ...sec(r'how it is tested'),
+    ...para('//', r'There is no test in the repository. Oh-my-posh itself can print a prompt from a configuration, which is how this file would be checked by hand, and the history shows it was: the battery template error is the kind of failure that only appears when the segment is rendered on a real machine. A change worth testing next would be a render with every XYNO_ variable unset, to confirm the claim above that the theme degrades to the built-in segments.'),
+    ...sec(r'history'),
+    ...pt('//', r'3690dee', r'2026-06-07 23:48, init: core XYNORASH configuration. The file arrives at 370 lines.'),
+    ...pt('//', r'b9d3efd', r'2026-06-07 23:52, fix: resilient carapace lookup + battery template error. +6 −2 in this file: the battery template and its icon properties. Merged as 791cf8c at 23:53. The file is 374 lines since.'),
   ],
 );

@@ -11,9 +11,10 @@ final Buffer page = makePage(
     blank,
     kv('role', 'custom g:clipboard for tmux, SSH and herdr sessions'),
     kv('language', 'Lua'),
-    kv('size', '103 lines'),
+    kv('size', '108 lines'),
     kv('entry point', 'require("config.remote_clipboard").setup()'),
-    kv('history', 'added in eabb22a; gate reordered in f35b4f6'),
+    kv('history', 'eabb22a (2026-09-02), f35b4f6 gate reordered, e874f9f renamed, ff1c8fa Linux-only (2026-10-16)'),
+    kv('standalone', 'also extracted as xyno-clipboard.nvim (2026-10-22)'),
 
     ...sec('the problem'),
     ...para('--',
@@ -24,7 +25,7 @@ final Buffer page = makePage(
         'wrong clipboard: the one on the remote machine, or only '
         'on the machine that runs the editor, not the screen you '
         'are sitting at. The header of this file states the '
-        'goal in four sentences:'),
+        'goal in a short comment:'),
     ...code('lua', 'lua/config/remote_clipboard.lua · intent', r'''
 -- Clipboard for sessions whose yanks may need to reach another machine:
 -- every copy is emitted as OSC 52 (inside tmux this becomes a tmux buffer,
@@ -144,6 +145,11 @@ end'''),
     ...sec('deciding whether to activate'),
     ...code('lua', 'lua/config/remote_clipboard.lua · gate', r'''
 function M.setup()
+  -- Linux only: the herdr detection walks /proc, and OSC 52 paste would replace
+  -- the native providers (win32yank, pbcopy) with a query many terminals never answer.
+  if vim.fn.has("linux") ~= 1 then
+    return
+  end
   -- Ordered cheapest-first so the /proc ancestor walk (16 process-file
   -- reads) only runs when no env var has already decided the answer.
   local relevant = vim.env.TMUX ~= nil
@@ -165,10 +171,8 @@ function M.setup()
         'walk whenever HERDR_PANE_ID was unset:'),
     plain('  -- eabb22a, replaced in f35b4f6'),
     plain('  local in_tmux = vim.env.TMUX ~= nil'),
-    plain('  local in_ssh = vim.env.SSH_TTY ~= nil'),
-    plain('        or vim.env.SSH_CONNECTION ~= nil'),
-    plain('  local in_herdr = vim.env.HERDR_PANE_ID ~= nil'),
-    plain('        or ancestor_process_named("herdr")'),
+    plain('  local in_ssh = vim.env.SSH_TTY ~= nil or vim.env.SSH_CONNECTION ~= nil'),
+    plain('  local in_herdr = vim.env.HERDR_PANE_ID ~= nil or ancestor_process_named("herdr")'),
     plain('  if not (in_tmux or in_ssh or in_herdr) then return end'),
     blank,
     ...para('--',
@@ -208,7 +212,7 @@ function M.setup()
         vim.fn.system(cmd, lines)
       end
 
-      if vim.g.omarchy_remote_clipboard_osc52 ~= false then
+      if vim.g.xynovim_remote_clipboard_osc52 ~= false then
         emit(lines)
       end
     end
@@ -224,15 +228,15 @@ function M.setup()
         'Neovim’s own wl-copy provider runs wl-copy with type '
         'text/plain, and adds the primary flag for the star '
         'register. This module does the same and adds one flag, '
-        'sensitive. As I understand wl-clipboard’s documentation, '
-        'that flag asks clipboard managers not to record the '
-        'entry in their history. The file gives no reason, so '
-        'treat that as my reading.'),
+        'sensitive. The file gives no reason for that flag and this '
+        'page does not verify what it does.'),
     ...pt('--', 'the escape hatch',
-        'vim.g.omarchy_remote_clipboard_osc52 = false turns the '
+        'vim.g.xynovim_remote_clipboard_osc52 = false turns the '
         'OSC 52 emission off while keeping the local write. It '
-        'is not mentioned in the README or the changelog; it is '
-        'only discoverable by reading this file.'),
+        'was named omarchy_remote_clipboard_osc52 until Omarchy support '
+        'was removed (e874f9f, 2026-10-13). tests/startup-and-options_spec.lua '
+        'still saves and restores the old variable name as well, around '
+        'line 991, so the spec cleans up either.'),
     ...pt('--', 'has_wayland is decided once',
         'at setup time, from the environment and the two '
         'executables. A Wayland session that starts after Neovim '
@@ -264,15 +268,14 @@ function M.setup()
         'Neovim’s own wl-copy provider passes the same flag. '
         'Passing the keep-empty argument (the third value) to '
         'systemlist preserves blank lines inside the text. And a '
-        'non-zero exit status, which as I understand it wl-paste '
-        'returns when nothing has been copied, produces an empty '
-        'table, so pasting from an empty clipboard is a quiet '
-        'no-op, not an error message.'),
+        'non-zero exit status produces an empty table, so a failed '
+        'wl-paste (the file does not say which cases return non-zero) '
+        'is a quiet no-op, not an error message.'),
 
     ...sec('registering the provider'),
     ...code('lua', 'lua/config/remote_clipboard.lua · registration', r'''
   vim.g.clipboard = {
-    name = "OmarchyRemoteClipboard",
+    name = "XynovimRemoteClipboard",
     copy = { ["+"] = copy("+"), ["*"] = copy("*") },
     paste = { ["+"] = paste("+"), ["*"] = paste("*") },
     cache_enabled = 0,
@@ -304,16 +307,41 @@ function M.setup()
         'as well. This is not observed or recorded. The text '
         'would be identical, so the effect would show only in a '
         'clipboard manager that keeps history.'),
-    ...pt('--', 'untested by the repository',
-        'the CHANGELOG records no verification of this module '
-        'beyond the startup change. A headless test could set '
-        'TMUX, put fake wl-copy and wl-paste scripts on PATH and '
-        'assert what each register produces, and that is the '
-        'natural next step.'),
-    ...pt('--', 'Linux only',
-        'the walk reads /proc, so on any system without it the '
-        'herdr test is always false and only the environment '
-        'variables can activate the module.'),
+    ...pt('--', 'tested',
+        'tests/startup-and-options_spec.lua (the describe block for '
+        'config/remote_clipboard.lua, from line 937) has eight '
+        'cases: nothing is installed outside tmux, ssh and herdr when '
+        'no ancestor is herdr; an ancestor process whose comm contains '
+        'herdr is detected; the provider is installed for each of '
+        'TMUX, SSH_CONNECTION, SSH_TTY and HERDR_PANE_ID; the no-Wayland '
+        'path (OSC 52 copy, osc52.paste); the Wayland copy and paste '
+        'command lines; the opt-out variable (the omarchy_ name is '
+        'ignored); and the ancestor walk limits (stops at ppid 1 or less, '
+        'bounded to 16 steps, survives unreadable /proc entries).'),
+    ...pt('--', 'Linux only, on purpose',
+        'ff1c8fa (2026-10-16, the Windows and macOS portability '
+        'commit) added an early return when has("linux") is not 1. '
+        'The comment gives two reasons: the herdr detection walks '
+        '/proc, and OSC 52 paste would replace the native providers '
+        '(win32yank, pbcopy) with a query many terminals never answer. '
+        'This reverses the earlier assumption that the module is harmless '
+        'on any system.'),
+
+    ...sec('the standalone plugin'),
+    ...para('--',
+        'On 2026-10-22 the module was extracted as xyno-clipboard.nvim '
+        '(~/projects/xyno-plugins/xyno-clipboard.nvim, with its own '
+        'README, help file and specs). The logic is the same code, with '
+        'differences visible in lua/xyno_clipboard: the /proc walk and '
+        'environment tests live in detect.lua, which returns the reason '
+        'for activating; setup(opts) takes options (commands, osc52); '
+        'the opt-out variable is vim.g.xyno_clipboard_osc52 instead of '
+        'xynovim_remote_clipboard_osc52; a status() function and a '
+        ':XynoClipboardStatus command report whether the provider was '
+        'installed or why it was skipped (not Linux, or no tmux, ssh or '
+        'herdr session detected); and the provider name is XynoClipboard '
+        'instead of XynovimRemoteClipboard. The copy in this repository is still the '
+        'one options.lua requires.'),
 
     ...sec('what to take from it'),
     ...para('--',
@@ -325,6 +353,6 @@ function M.setup()
         'the common case stays on the built-in path.'),
 
     blank,
-    link('→ github.com/XNash/xynovim', 'https://github.com/XNash/xynovim'),
+    link('→ github.com/xynorash/xynovim', 'https://github.com/xynorash/xynovim'),
   ],
 );

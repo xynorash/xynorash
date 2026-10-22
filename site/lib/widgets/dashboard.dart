@@ -101,7 +101,7 @@ class Dashboard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            Text('Solving problems at the edge of impossible.',
+            Text('Every system has an edge. I like to stand on it, curious, and see what’s past it.',
                 style: mono(t.fgDim, size: 13, style: FontStyle.italic)),
             const SizedBox(height: 28),
             for (var i = 0; i < projects.length; i++)

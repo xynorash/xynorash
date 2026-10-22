@@ -59,11 +59,19 @@ List<CodeLine> para(String p, String text, {int width = 62}) =>
 /// A wrapped "head — rest" bullet: highlighted head, hanging indent.
 List<CodeLine> pt(String p, String head, String rest, {int width = 62}) {
   final ls = wrapText('$head — $rest', width);
+  if (ls.first.length < head.length) {
+    // The head alone is wider than the column: show it whole, wrap the rest.
+    return [
+      CodeLine([Span('$p ', Tok.comment), Span(head, Tok.type)]),
+      for (final l in wrapText(rest, width)) cm(p, '  $l'),
+    ];
+  }
   return [
     CodeLine([
       Span('$p ', Tok.comment),
       Span(head, Tok.type),
-      Span(ls.first.substring(head.length), Tok.comment),
+      if (ls.first.length > head.length)
+        Span(ls.first.substring(head.length), Tok.comment),
     ]),
     for (final l in ls.skip(1)) cm(p, '  $l'),
   ];
@@ -157,11 +165,18 @@ List<CodeLine> text(String t, {int width = 64}) =>
 /// A wrapped markdown-style bullet: highlighted head, hanging indent.
 List<CodeLine> bullet(String head, String rest, {int width = 64}) {
   final ls = wrapText('$head — $rest', width - 2);
+  if (ls.first.length < head.length) {
+    return [
+      CodeLine([const Span('- ', Tok.punct), Span(head, Tok.type)]),
+      for (final l in wrapText(rest, width - 2)) plain('  $l'),
+    ];
+  }
   return [
     CodeLine([
       const Span('- ', Tok.punct),
       Span(head, Tok.type),
-      Span(ls.first.substring(head.length), Tok.plain),
+      if (ls.first.length > head.length)
+        Span(ls.first.substring(head.length), Tok.plain),
     ]),
     for (final l in ls.skip(1)) plain('  $l'),
   ];

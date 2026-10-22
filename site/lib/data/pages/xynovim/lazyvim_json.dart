@@ -6,14 +6,14 @@ final Buffer page = makePage(
   lines: [
     cm('//', '──────────────────────────────────────────'),
     cm('//', 'lazyvim.json — the file LazyVim writes about itself'),
-    cm('//', 'two extras, one format version, one stale news counter'),
+    cm('//', 'seventeen extras, one format version, one stale news counter'),
     cm('//', '──────────────────────────────────────────'),
     blank,
     kv('role', 'LazyVim state: enabled extras and format versions'),
     kv('language', 'JSON, written by LazyVim, not by hand'),
-    kv('size', '11 lines'),
-    kv('extras', 'editor.neo-tree, lang.rust'),
-    kv('history', 'one commit: eabb22a, 2026-09-02'),
+    kv('size', '26 lines'),
+    kv('extras', '17: lang.rust, editor.neo-tree, dap.core, test.core, ai.claudecode, ...'),
+    kv('history', '5 commits: eabb22a (2026-09-02), then four on 2026-10-09'),
 
     ...sec('what it is'),
     ...para('//',
@@ -21,15 +21,33 @@ final Buffer page = makePage(
         'config directory. The framework writes it, for example '
         'when you toggle something in :LazyExtras or when its news '
         'counter updates, and reads it back at every start. It '
-        'entered this repository once, '
-        'in the migration commit eabb22a, and has never changed '
-        'since: the extras it lists were enabled on day one and '
-        'no other extra has been added.'),
+        'entered this repository in the migration commit eabb22a '
+        '(2026-09-02) with two extras, neo-tree and lang.rust. All '
+        'later changes are additions to the extras list, made on a '
+        'single day, 2026-10-09: 01475c4 (roadmap step 2: dap, test, '
+        'overseer, toml, yaml, json, markdown, git), b64aa27 '
+        '(mini-surround, neogen, inc-rename, navic, treesitter-context), '
+        '527f350 (util.rest) and bdd0225 (ai.claudecode).'),
     ...code('json', 'lazyvim.json · the whole file', r'''
 {
   "extras": [
+    "lazyvim.plugins.extras.ai.claudecode",
+    "lazyvim.plugins.extras.coding.mini-surround",
+    "lazyvim.plugins.extras.coding.neogen",
+    "lazyvim.plugins.extras.dap.core",
+    "lazyvim.plugins.extras.editor.inc-rename",
+    "lazyvim.plugins.extras.editor.navic",
     "lazyvim.plugins.extras.editor.neo-tree",
-    "lazyvim.plugins.extras.lang.rust"
+    "lazyvim.plugins.extras.editor.overseer",
+    "lazyvim.plugins.extras.lang.git",
+    "lazyvim.plugins.extras.lang.json",
+    "lazyvim.plugins.extras.lang.markdown",
+    "lazyvim.plugins.extras.lang.rust",
+    "lazyvim.plugins.extras.lang.toml",
+    "lazyvim.plugins.extras.lang.yaml",
+    "lazyvim.plugins.extras.test.core",
+    "lazyvim.plugins.extras.ui.treesitter-context",
+    "lazyvim.plugins.extras.util.rest"
   ],
   "install_version": 8,
   "news": {
@@ -77,6 +95,20 @@ final Buffer page = makePage(
         'lazy-lock.json confirms and which the 99 spec relies on '
         'through blink.compat), and the explorer is neo-tree only '
         'because this file says so.'),
+
+    ...sec('the extras added on 2026-10-09'),
+    ...para('//',
+        'Fifteen extras were added in four commits on one day, all '
+        'under “Roadmap” messages. The names show what each one is '
+        'for; what they install is defined inside LazyVim, not here. '
+        'dap.core, test.core and editor.overseer are the debug, test '
+        'and task-runner layers (matching lua/plugins/dap.lua and '
+        'tests-related specs); lang.toml, lang.yaml, lang.json, '
+        'lang.markdown and lang.git are filetype support; util.rest '
+        'pairs with the http ftplugin in after/ftplugin/http.lua; '
+        'ai.claudecode is the Claude Code integration extra. '
+        'This page does not claim more than the names and the commit '
+        'messages say.'),
 
     ...sec('the explicit extra that overrides a default'),
     ...para('//',
@@ -174,6 +206,6 @@ final Buffer page = makePage(
         'LazyVim resolves defaults, not stated by the author.'),
 
     blank,
-    link('→ github.com/XNash/xynovim', 'https://github.com/XNash/xynovim'),
+    link('→ github.com/xynorash/xynovim', 'https://github.com/xynorash/xynovim'),
   ],
 );

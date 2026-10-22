@@ -11,8 +11,8 @@ final Buffer page = makePage(
     blank,
     kv('role', 'installs Harpoon 2 and binds keys to mark, list and jump between files'),
     kv('language', 'Lua (a lazy.nvim spec whose keys table triggers lazy loading)'),
-    kv('size', '24 lines: 21 of code, 3 of comment'),
-    kv('history', '3 versions: local clone (2026-08-17), GitHub spec (2026-09-02), static keys (2026-09-03)'),
+    kv('size', '25 lines'),
+    kv('history', '5 versions: local clone (2026-08-17), GitHub spec (2026-09-02), static keys (2026-09-03), <leader>H (2026-10-12), rounded border (2026-10-13)'),
     kv('pinned', 'harpoon (branch harpoon2) at 87b1a35, plenary.nvim at 74b06c6'),
     ...sec('why this file exists'),
     ...para('--',
@@ -26,7 +26,7 @@ final Buffer page = makePage(
         r'clone)”).'),
     blank,
     ...para('--',
-        r'The file is 24 lines and most of that is a table of six key '
+        r'The file is 25 lines and most of that is a table of six key '
         r'bindings. What makes it worth a page is the three comment '
         r'lines above that table. They record a change that is '
         r'invisible when it works and costly when it is wrong: whether '
@@ -39,16 +39,17 @@ return {
   branch = "harpoon2",
   dependencies = { "nvim-lua/plenary.nvim" },
   opts = {},
+  -- add key is <leader>H: <leader>a is the AI (claudecode) prefix.
   -- static keys table with requires deferred into the callbacks: a keys
   -- FUNCTION that requires harpoon at spec-build time force-loads
   -- harpoon+plenary during startup, defeating lazy-loading entirely.
   keys = {
-    { "<leader>a", function() require("harpoon"):list():add() end, desc = "Harpoon: Add file" },
+    { "<leader>H", function() require("harpoon"):list():add() end, desc = "Harpoon: Add file" },
     {
       "<C-e>",
       function()
         local harpoon = require("harpoon")
-        harpoon.ui:toggle_quick_menu(harpoon:list())
+        harpoon.ui:toggle_quick_menu(harpoon:list(), { border = "rounded" }) -- harpoon hardcodes "single"
       end,
       desc = "Harpoon: Quick menu",
     },
@@ -59,7 +60,7 @@ return {
     blank,
     cm('--', '  key           action'),
     cm('--', '  ------------  --------------------------------------------'),
-    cm('--', '  <leader>a     add the current file to the list'),
+    cm('--', '  <leader>H     add the current file to the list'),
     cm('--', '  <C-e>         toggle the quick menu (edit or jump)'),
     cm('--', '  <M-1>..<M-4>  jump to list entry 1, 2, 3 or 4'),
     blank,
@@ -120,7 +121,7 @@ return {
         r'looked like preparation was the load.'),
     blank,
     ...para('--',
-        r'This is why the 24-line file has a comment that reads like '
+        r'This is why the 25-line file has a comment that reads like '
         r'a rule. The fix keeps the shape of the user-facing '
         r'configuration and moves every require inside a callback:'),
     ...pt('--', 'a static table',
@@ -180,8 +181,8 @@ return {
         r'spec”). And the first spec also bound <leader>A to '
         r'harpoon:list():prepend(), which is absent from the '
         r'current file. The changelog does not mention the removal, '
-        r'so whether it was deliberate is not recorded; I only '
-        r'report that it is gone.'),
+        r'so whether it was deliberate is not recorded; this page only '
+        r'reports that it is gone.'),
 
     ...sec('limits'),
     ...pt('--', 'four slots',
@@ -204,8 +205,20 @@ return {
         r'effects in callbacks. A function that does work while the '
         r'spec is being built is not configuration, it is startup '
         r'code.'),
+    ...sec('October changes: two small ones'),
+    ...pt('--', '0494b52, 2026-10-12',
+        r'the add key moved from <leader>a to <leader>H. The comment '
+        r'added with it gives the reason: <leader>a is the AI '
+        r'(claudecode) prefix, and the claudecode extra is enabled in '
+        r'lazyvim.json. The commit message calls the batch “Field '
+        r'test fixes”.'),
+    ...pt('--', '98c9bb4, 2026-10-13',
+        r'the quick menu is opened with { border = "rounded" }. The inline '
+        r'comment says harpoon hardcodes "single", which is why the '
+        r'option is passed per call here and not set globally; it matches '
+        r'the rounded winborder in lua/config/options.lua.'),
     blank,
-    link('→ github.com/XNash/xynovim', 'https://github.com/XNash/xynovim'),
+    link('→ github.com/xynorash/xynovim', 'https://github.com/xynorash/xynovim'),
     link('→ github.com/ThePrimeagen/harpoon (harpoon2 branch)', 'https://github.com/ThePrimeagen/harpoon/tree/harpoon2'),
   ],
 );

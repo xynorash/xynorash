@@ -19,7 +19,7 @@ void main() {
     final s = makeState();
     await tester.pumpWidget(host(s));
     expect(
-      find.textContaining('Solving problems at the edge of impossible.',
+      find.textContaining('Every system has an edge.',
           findRichText: true),
       findsOneWidget,
     );
@@ -30,8 +30,8 @@ void main() {
     final s = makeState();
     s.openBuffer(idxOf('heaplens/README.md'));
     await tester.pumpWidget(host(s));
-    // the banner's second line is short enough to render unwrapped
-    final banner = s.buffer.lines[1].spans.map((x) => x.text).join();
+    // the page's title line is short enough to render unwrapped
+    final banner = s.buffer.lines[0].spans.map((x) => x.text).join();
     expect(find.textContaining(banner.trim(), findRichText: true),
         findsOneWidget);
     s.handleKey('G'); // stats line is appended at the bottom of the buffer

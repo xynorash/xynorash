@@ -42,6 +42,7 @@ void main() {
   testWidgets('telescope rows are clickable', (tester) async {
     final s = makeState();
     s.openFinder();
+    s.finderType('about');
     await tester.pumpWidget(host(s, TelescopeOverlay(state: s)));
     await tester.tap(find.textContaining('about.md', findRichText: true));
     await tester.pump();

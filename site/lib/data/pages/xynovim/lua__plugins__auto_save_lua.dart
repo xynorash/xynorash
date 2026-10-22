@@ -11,14 +11,14 @@ final Buffer page = makePage(
     blank,
     kv('role', 'saves buffers in the background and re-sends textDocument/didSave to LSP clients'),
     kv('language', 'Lua (a lazy.nvim spec for okuuva/auto-save.nvim)'),
-    kv('size', '53 lines: 34 of code, 18 of comment, 1 blank'),
-    kv('history', '6 commits over 17 days, 2026-08-17 to 2026-09-03; one hack written, regretted, replaced'),
+    kv('size', '92 lines (53 until 2026-10-12)'),
+    kv('history', '10 commits, 2026-08-17 to 2026-10-14; one hack written, regretted, replaced; then safety work'),
     kv('pinned', 'auto-save.nvim at 9aabcb8 in lazy-lock.json'),
     ...sec('why this file exists'),
     ...para('--',
         r'Two sentences from the CHANGELOG explain the file. 0.2.0 '
         r'(an early Windows-lineage release) added auto-save.nvim “for '
-        r'RustRover-style background auto-save”. And 1.3.0 explains why '
+        r'background auto-save, as in the JetBrains IDEs”. And 1.3.0 explains why '
         r'it matters to the Rust setup: the auto-save fires about one '
         r'second after typing stops, and that save was what used to '
         r'trigger clippy runs. So the file started as a comfort feature '
@@ -53,6 +53,8 @@ return {
     require("auto-save").setup({
       enabled = true,
       noautocmd = true,
+      -- never into dependency sources, never over a file that changed on disk
+      condition = require("config.disk_guard").can_save,
       trigger_events = {
         immediate_save = { "BufLeave", "FocusLost", "QuitPre", "VimSuspend" },
         -- TextChanged only fires for edits made OUTSIDE insert mode; its
@@ -99,16 +101,16 @@ return {
         r'untouched, then reformats correctly on manual save.”'),
     blank,
     ...para('--',
-        r'One honest wrinkle belongs here. Today lua/config/options.lua '
+        r'One wrinkle belongs here. Today lua/config/options.lua '
         r'sets vim.g.autoformat = false, LazyVim’s global switch, and '
-        r'the README lists “format-on-save off globally” and, a few '
-        r'lines earlier, says “manual :w still formats”. Those two '
-        r'claims are not obviously compatible with each other, and I '
-        r'could not settle from the repo which formatter path the '
-        r'manual :w uses now. What is certain is the history: '
-        r'noautocmd came from a conform-based Windows setup, and it '
-        r'stayed. Its side effect is the reason the rest of this page '
-        r'exists.'),
+        r'docs/DETAILS.md lists “Format-on-save off globally”. CHANGELOG '
+        r'0.2.0 still says only a manual :w formats, but the case '
+        r'numbered 4 in tests/auto-save-disk-guard_spec.lua is titled “an '
+        r'autosave does not format, :w does not format, <leader>cf does”, '
+        r'so the manual :w no longer formats either. What carries over '
+        r'from the history is that noautocmd came from a conform-based '
+        r'Windows setup, and it stayed. Its side effect is the reason the '
+        r'rest of this page exists.'),
 
     ...sec('the bug: diagnostics that only moved on :w'),
     ...para('--',
@@ -176,9 +178,9 @@ return {
         r'noautocmd, then silent! w), called the real vim.cmd, and sent '
         r'didSave to the current buffer’s clients afterwards. It '
         r'verified the result end to end: an error typed, no manual '
-        r'save, diagnostic in about 1.5 s. That figure is easy to '
-        r'read: a one-second debounce and about half a second for '
-        r'everything else, my arithmetic rather than a measured split.'),
+        r'save, diagnostic in about 1.5 s. The notes '
+        r'do not split that figure between the one-second debounce and '
+        r'the rest.'),
     blank,
     ...para('--',
         r'It also broke something. vim.cmd is not a plain function; '
@@ -217,7 +219,8 @@ return {
       group = group,
       callback = function(ev)
         local buf = ev.data and ev.data.saved_buffer
-        if not (buf and vim.api.nvim_buf_is_valid(buf)) then
+        -- still modified: the write was refused (see config/disk_guard.lua)
+        if not (buf and vim.api.nvim_buf_is_valid(buf)) or vim.bo[buf].modified then
           return
         end
         for _, client in ipairs(vim.lsp.get_clients({ bufnr = buf })) do
@@ -308,6 +311,52 @@ return {
         r'TextChangedI was added to both the plugin’s lazy-load event '
         r'(line 3) and defer_save.'),
 
+    ...sec('October: the hook grows safety and side effects'),
+    ...para('--',
+        r'Between 2026-10-13 and 2026-10-14 four commits added behaviour '
+        r'to the same callback and to the setup call. Each one answers '
+        r'a concrete failure listed in its commit message.'),
+    ...pt('--', 'condition = disk_guard.can_save (b65284f)',
+        r'the plugin’s own condition hook, set to a function from '
+        r'lua/config/disk_guard.lua. The comment states the rule: never '
+        r'write into dependency sources, never over a file that '
+        r'changed on disk. tests/auto-save-disk-guard_spec.lua is built '
+        r'around it (cases numbered 7 to 15 cover dependency roots, '
+        r'mtime stamps, a deleted file, and a file changed inside the '
+        r'debounce window).'),
+    ...pt('--', 'vim.bo[buf].modified (b65284f)',
+        r'if the buffer is still modified after the write, the write '
+        r'was refused, so no didSave is sent. Without this check the '
+        r'server would be told about a save that never happened. The '
+        r'spec case “sends no didSave when the buffer is still modified '
+        r'after the write” covers it.'),
+    ...pt('--', 'undojoin (a3d33c8)',
+        r'an autosave in the middle of an insert closes the undo block. '
+        r'The handler runs undojoin when the mode starts with i, so the '
+        r'text typed next to it joins the block. The spec asserts that '
+        r'one u undoes the whole insert.'),
+    ...pt('--', 'neotest watch mode (b65284f)',
+        r'neotest’s watch mode (<leader>tw) reruns tests from a '
+        r'BufWritePost autocmd, which a noautocmd write skips. '
+        r'neotest_watching() looks for an autocmd whose callback source '
+        r'is neotest/consumers/watch/watcher.lua and, only if one '
+        r'exists, re-emits BufWritePost. The comment explains why not '
+        r'always: it would run every handler, local history’s included, '
+        r'on each autosave for nothing.'),
+    ...pt('--', 'neotest rediscovery (3f868dd)',
+        r'for Rust buffers without a watcher, only the neotest.Client '
+        r'group is triggered. The comment gives the symptom: the test '
+        r'tree kept the old tests after an autosave, so <leader>tr on '
+        r'a new test ran another one.'),
+    ...pt('--', 'nvim-lint (25086fd)',
+        r'nvim-lint lints on BufWritePost, which the noautocmd write '
+        r'skipped, and the InsertLeave lint fires about a second before '
+        r'the save and reads the old disk text. For non-Rust buffers '
+        r'the handler now triggers the nvim-lint group, so the Cargo.toml '
+        r'diagnostics from cargo-deny and cargo-machete stop going '
+        r'stale until a manual :w. A spec case covers both the non-Rust '
+        r'and the Rust path.'),
+
     ...sec('how it grew'),
     cm('--', '  2026-08-17 16:02  3dacffb  17 lines, plain opts: the fork,'),
     cm('--', '                             noautocmd, the three trigger lists'),
@@ -317,9 +366,13 @@ return {
     cm('--', '  2026-09-02 23:42  eabb22a  moved to lua/plugins/ in the'),
     cm('--', '                             LazyVim migration, “carried over intact”'),
     cm('--', '  2026-09-03 19:54  f35b4f6  proxy replaced by AutoSaveWritePost'),
+    cm('--', '  2026-10-13        b65284f  condition, modified check, neotest watch'),
+    cm('--', '  2026-10-13        a3d33c8  undojoin'),
+    cm('--', '  2026-10-13        3f868dd  neotest.Client rediscovery'),
+    cm('--', '  2026-10-14        25086fd  nvim-lint refresh'),
     blank,
     ...para('--',
-        r'Of the 53 lines today, only the setup call is recognisably '
+        r'Of the 92 lines today, only the setup call is recognisably '
         r'the original file. Almost everything else is the answer to '
         r'one question, “what does noautocmd take away?”.'),
 
@@ -328,21 +381,22 @@ return {
         r'it suppresses every BufWritePre and BufWritePost listener, '
         r'not just the LSP one. This file compensates for exactly one '
         r'of them. Any other plugin that reacts to a write will not see '
-        r'autosaves; I have no evidence of such a plugin in this '
+        r'autosaves; no such plugin is identified in this '
         r'config, but nothing here would notice if there were.'),
     ...pt('--', 'it relies on the fork’s event contract',
         r'that AutoSaveWritePost fires after the write and carries '
         r'data.saved_buffer. The lock file pins one commit, and the '
-        r'repo has no automated test that pins the contract; the '
-        r'check is the manual one in CHANGELOG 1.3.0.'),
+        r'the spec cases in tests/auto-save-disk-guard_spec.lua (“an autosave sends '
+        r'didSave although noautocmd suppresses BufWritePost”) now check the '
+        r'behaviour end to end.'),
     ...pt('--', 'it can only tell servers about saves it did',
         r'a save made by another means (a plain :w) goes through '
         r'Neovim’s normal path and sends its own didSave.'),
     ...pt('--', 'the formatter question',
         r'see the wrinkle above: global autoformat is off, so the '
         r'noautocmd guard against format-on-save is now defence in '
-        r'depth more than a necessity, if I read options.lua '
-        r'correctly.'),
+        r'depth more than a necessity, given vim.g.autoformat = false '
+        r'in options.lua.'),
     ...sec('what to take from it'),
     ...pt('--', 'eliminate the healthy parts first',
         r'the didSave diagnosis worked because the pipeline was cut '
@@ -355,6 +409,6 @@ return {
         r'the TextChangedI check took the old trigger out of the '
         r'test.'),
     blank,
-    link('→ github.com/XNash/xynovim', 'https://github.com/XNash/xynovim'),
+    link('→ github.com/xynorash/xynovim', 'https://github.com/xynorash/xynovim'),
   ],
 );

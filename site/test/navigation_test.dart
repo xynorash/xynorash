@@ -14,8 +14,12 @@ void main() {
     }
   });
 
+  // A page with a comment banner before its first section, so the first
+  // heading is not on line 0.
+  const bannered = 'xynorash-pwsh/install.ps1';
+
   test('sectionAt finds the enclosing heading', () {
-    final b = kBuffers[idxOf('heaplens/README.md')];
+    final b = kBuffers[idxOf(bannered)];
     final s = b.outline[2];
     expect(b.sectionAt(s.line)!.title, s.title);
     expect(b.sectionAt(s.line + 1)!.title, s.title);
@@ -23,7 +27,7 @@ void main() {
   });
 
   test(']] and [[ jump between sections', () {
-    final s = makeState()..openBuffer(idxOf('heaplens/README.md'));
+    final s = makeState()..openBuffer(idxOf(bannered));
     final o = s.buffer.outline;
     s.handleKey(']');
     s.handleKey(']');
@@ -37,7 +41,7 @@ void main() {
   });
 
   test('space o opens the outline; enter jumps; esc closes', () {
-    final s = makeState()..openBuffer(idxOf('heaplens/README.md'));
+    final s = makeState()..openBuffer(idxOf(bannered));
     s.handleKey(' ');
     s.handleKey('o');
     expect(s.mode, UiMode.outline);

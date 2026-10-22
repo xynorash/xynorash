@@ -17,12 +17,12 @@ final Buffer page = makePage(
     ...sec('the whole file'),
     ...code('lua', 'lua/plugins/snacks-animated-scrolling-off.lua · the entire file', r'''
 return {
-  "folke/snacks.nvim",
-  opts = {
-    scroll = {
-      enabled = false, -- Disable scrolling animations
-    },
-  },
+	"folke/snacks.nvim",
+	opts = {
+		scroll = {
+			enabled = false, -- Disable scrolling animations
+		},
+	},
 }'''),
     ...para('--',
         r'The file name is a sentence: snacks, animated scrolling, '
@@ -44,12 +44,9 @@ return {
     ...para('--',
         r'An override that sets enabled = false is only meaningful if '
         r'the module is on without it. That is an inference from the '
-        r'existence of the file, not something the repo states, and I '
-        r'could not look inside the pinned snacks.nvim or LazyVim to '
-        r'confirm the default. The consequence for the reader is '
-        r'clear enough from the comment: jumping by a page or a '
-        r'half-page moves the view in one step instead of gliding '
-        r'there over a few frames.'),
+        r'existence of the file, not something the repo states; the pinned '
+        r'snacks.nvim and LazyVim sources are not part of this repo, so the default is not '
+        r'confirmed here. The comment only says that scrolling animations are disabled.'),
 
     ...sec('where it sits in the config'),
     ...para('--',
@@ -57,10 +54,14 @@ return {
         r'changelog lists in a single line, together with '
         r'disable-news-alert.lua. They have the same history and '
         r'the same tab-indented style, a style that differs from '
-        r'the two-space layout stylua.toml asks for. Both facts are '
-        r'consistent with the files having arrived from the '
-        r'Omarchy defaults and been kept, which is an inference and '
-        r'not a statement from the repo.'),
+        r'the two-space layout stylua.toml asks for. The repo does not say why.'),
+
+    ...sec('how it is tested'),
+    ...para('--',
+        r'tests/startup-and-options_spec.lua line 625 has a describe block for this '
+        r'plugin: “disables snacks scrolling and keeps the <leader>uS '
+        r'toggle”. It reads the merged snacks.nvim opts and asserts '
+        r'scroll.enabled is false.'),
 
     ...sec('what is not recorded'),
     ...pt('--', 'a reason beyond the comment',
@@ -70,8 +71,8 @@ return {
         r'being nothing more.'),
     ...pt('--', 'a measurement',
         r'the startup work in CHANGELOG 1.3.0 measured startup time, '
-        r'not scrolling. Nothing says this file affects either, and '
-        r'I will not claim a performance benefit.'),
+        r'not scrolling. Nothing says this file affects either, so no '
+        r'performance benefit is claimed.'),
     ...pt('--', 'a test',
         r'the repo has no check that the flag still has an effect. '
         r'If a future snacks renamed the scroll module, the file '
