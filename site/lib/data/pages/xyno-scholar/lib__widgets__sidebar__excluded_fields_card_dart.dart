@@ -5,56 +5,56 @@ final Buffer page = makePage(
   'xyno-scholar/lib/widgets/sidebar/excluded_fields_card.dart',
   lines: [
     cm('//', '──────────────────────────────────────────'),
-    cm('//', 'excluded_fields_card.dart — telling the model what to stay away from'),
-    cm('//', 'a tag box whose contents become one clause of rule 2'),
+    cm('//', r'excluded_fields_card.dart — the “not this” list'),
+    cm('//', r'a tag box for themes the topics must stay away from'),
     cm('//', '──────────────────────────────────────────'),
     blank,
-    kv('role', 'sidebar card: rose chips for excluded themes plus a text box to add one'),
-    kv('language', 'Dart / Flutter, ConsumerStatefulWidget'),
-    kv('size', '80 lines'),
-    kv('history', '2 commits, 7a200e7 (scaffold) and 89a9c12 (icon package import)'),
-    kv('state', 'PreferenceBlock.excludedFields in preferenceBlockProvider'),
-    kv('reaches the model', 'as one bracketed list inside rule 2 of the system prompt'),
-    ...sec('why this card exists'),
-    ...para('//',
-        'Choosing what to include is half the question. The other '
-        'half is what the user is tired of or cannot use: a '
-        'student who wants history and theology but not another '
-        'war, or not the twentieth century. The card gives that '
-        'negative preference a place. Its hint text, “e.g. war, '
-        '20th century…” in English and “ex. guerre, XXe siècle…” in '
-        'French (lib/l10n/strings.dart), shows the two kinds of '
-        'thing meant: a theme and a period.'),
-    ...para('//',
-        'It is the smallest of the five cards, and it is also the '
-        'one with the least machinery behind it. A tag goes from '
-        'the text box into a list, and from the list into a '
-        'sentence of the prompt. There is no id, no catalog, no '
-        'normalisation. That plainness is the design: an exclusion '
-        'is whatever the user writes, because the set of things a '
-        'person might want to avoid is open-ended in a way the '
-        'catalog of fields is not.'),
+    kv(r'role', r'sidebar card that edits PreferenceBlock.excludedFields'),
+    kv(r'language', r'Dart / Flutter, a ConsumerStatefulWidget with Riverpod'),
+    kv(r'size', r'80 lines, 2 commits'),
+    kv(r'writes', r'addExcludedTag and removeExcludedTag on the preference notifier'),
+    kv(r'history', r'7a200e7 (2026-08-06 09:41), 89a9c12 (09:58)'),
 
-    ...sec('themes in the UI, fields in the model'),
+    ...sec(r'why this file exists'),
     ...para('//',
-        'The card’s title is “Thèmes exclus” / “Excluded themes”. '
-        'Everywhere below the widget the same data is called '
-        'excluded fields: the PreferenceBlock member is '
-        'excludedFields, the provider methods are addExcludedTag and '
-        'removeExcludedTag, and the prompt calls them “Fields to '
-        'actively avoid”. The two vocabularies disagree. A theme '
-        '(war) and a period (20th century) are not academic fields '
-        'in the sense of the catalog, and a user who reads '
-        '“themes” will type themes. The model, told to avoid '
-        '“fields”, has to interpret the list charitably. The '
-        'mismatch may be harmless in practice, but nothing in the '
-        'repository tests what the model does with a theme in that '
-        'slot, and it is the kind of naming drift that makes later '
-        'changes harder. The commit history has no discussion of '
-        'it.'),
+        r'Most of the sidebar says what you want: fields, level, tone. '
+        r'This card says what you do not. Anyone who has asked a '
+        r'search engine or a model for ideas knows the problem: it '
+        r'keeps coming back to the obvious things. A student who is '
+        r'tired of the Second World War does not want to see it in '
+        r'five of eight suggestions. The placeholder shows the idea: '
+        r'“e.g. war, 20th century…” (in French, “ex. guerre, XXe '
+        r'siècle…”). These are a theme and a period, which is why the '
+        r'card’s title is “Excluded themes” (Thèmes exclus).'),
 
-    ...sec('the widget'),
-    ...code('dart', 'lib/widgets/sidebar/excluded_fields_card.dart · state and submit', r'''
+    ...sec(r'where the tags go'),
+    ...code('dart', r'lib/services/mistral_client.dart · lines 45-47', r'''
+    final excludedList = prefs.excludedFields.isEmpty
+        ? '(none)'
+        : prefs.excludedFields.join(', ');'''),
+    ...code('dart', r'lib/services/mistral_client.dart · line 53', r'''
+2. Never add a field the user did not select, and never assume one field implies another (e.g. theology does not imply art, history does not imply theology, etc). Fields to actively avoid, if any: [$excludedList].'''),
+    ...para('//',
+        r'The tags are joined with commas and placed into rule 2 of the '
+        r'system prompt, under the words “Fields to actively avoid”. '
+        r'There is nothing else. The model is asked, in prose, to '
+        r'keep away; the code does not check the answer for the '
+        r'excluded words. So this card is a request to the model, not '
+        r'a filter. A tag the model ignores will still appear in '
+        r'a topic.'),
+    blank,
+    ...para('//',
+        r'A naming gap is visible here. The card calls them themes, the '
+        r'data and the prompt call them fields (excludedFields, “fields '
+        r'to actively avoid”). The hint text gives themes and '
+        r'periods, not academic fields, and the prompt’s rule about '
+        r'fields is mostly about not adding disciplines. I read the '
+        r'model as handling both fine, since the instruction is plain '
+        r'language, but the label and the name are two words for '
+        r'one thing.'),
+
+    ...sec(r'submitting a tag'),
+    ...code('dart', r'lib/widgets/sidebar/excluded_fields_card.dart · lines 16-30', r'''
 class _ExcludedFieldsCardState extends ConsumerState<ExcludedFieldsCard> {
   final _controller = TextEditingController();
 
@@ -71,17 +71,46 @@ class _ExcludedFieldsCardState extends ConsumerState<ExcludedFieldsCard> {
     _controller.clear();
   }'''),
     ...para('//',
-        'The card is stateful for exactly one reason: it owns a '
-        'TextEditingController, and a controller has to be disposed. '
-        'The tags themselves live in the provider. The submit '
-        'method trims, ignores a blank, hands the string to the '
-        'controller and clears the box. It trims twice, once here '
-        'and once inside addExcludedTag in '
-        'lib/providers/preference_providers.dart, which also '
-        'refuses exact duplicates. Like its twin in the field '
-        'card, it takes a WidgetRef parameter that the State '
-        'already provides as ref.'),
-    ...code('dart', 'lib/widgets/sidebar/excluded_fields_card.dart · the chips (trimmed)', r'''
+        r'The state class owns a single TextEditingController and '
+        r'disposes it. _submit trims, ignores blanks, adds the tag via '
+        r'the notifier and empties the box. The parameter is named ref '
+        r'and takes the same name as the State’s own ref property, '
+        r'so inside the function it shadows it. It is harmless, since '
+        r'the caller passes the State’s ref in, but it is the kind of '
+        r'thing a linter would call out.'),
+    blank,
+    ...para('//',
+        r'The notifier does its own checking. This is its half:'),
+    ...code('dart', r'lib/providers/preference_providers.dart · lines 26-36', r'''
+  void addExcludedTag(String tag) {
+    final trimmed = tag.trim();
+    if (trimmed.isEmpty || state.excludedFields.contains(trimmed)) return;
+    state = state.copyWith(excludedFields: [...state.excludedFields, trimmed]);
+  }
+
+  void removeExcludedTag(String tag) {
+    state = state.copyWith(
+      excludedFields: state.excludedFields.where((t) => t != tag).toList(),
+    );
+  }'''),
+    ...para('//',
+        r'The notifier trims again and refuses duplicates, so the check '
+        r'is in two places. The duplicate test is exact: “war” and '
+        r'“War” are two different tags. State is replaced, never '
+        r'mutated: a new list is built each time, which is what '
+        r'makes Riverpod notice the change. And the card clears the '
+        r'box even when the notifier ignored a duplicate, so '
+        r're-typing a tag you already have empties the box and '
+        r'shows no message.'),
+
+    ...sec(r'the chips and the box'),
+    ...code('dart', r'lib/widgets/sidebar/excluded_fields_card.dart · lines 43-75', r'''
+          if (prefs.excludedFields.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
                 children: prefs.excludedFields.map((tag) {
                   return InputChip(
                     label: Text(tag),
@@ -93,118 +122,73 @@ class _ExcludedFieldsCardState extends ConsumerState<ExcludedFieldsCard> {
                     side: BorderSide(
                       color: colors.rose.withValues(alpha: 0.35),
                     ),
-                  );'''),
+                  );
+                }).toList(),
+              ),
+            ),
+          TextField(
+            controller: _controller,
+            decoration: InputDecoration(
+              hintText: s.excludedHint,
+              isDense: true,
+              suffixIcon: IconButton(
+                icon: const Icon(LucideIcons.plus, size: 18),
+                onPressed: () => _submit(ref),
+              ),
+            ),
+            onSubmitted: (_) => _submit(ref),
+          ),'''),
     ...para('//',
-        'Each tag is an InputChip with a cross, the same Material '
-        'chip the field card uses for its selection, but filled '
-        'with rose instead of teal. Unlike the field card, the '
-        'delete callback is unconditional: there is no minimum '
-        'number of exclusions, so every chip can be removed and '
-        'the list can go back to empty. The label is the tag '
-        'exactly as typed, with its capitals and accents intact; '
-        'the field card, by contrast, lowercases what it stores.'),
-    ...para('//',
-        'The chip row is only built when the list is not empty, and '
-        'it is wrapped in a 10 px bottom padding that exists only '
-        'in that case, so an empty card collapses to its title and '
-        'the text box with no stray gap. The text box below it is '
-        'the same pattern as in the field card: a TextField with '
-        'isDense, a plus button as its suffix icon, and '
-        'onSubmitted calling the same handler as the button.'),
-
-    ...sec('rose means “no”'),
-    ...para('//',
-        'The palette comment in lib/theme/app_colors.dart reserves '
-        'rose for “destructive actions, errors, key-rejected '
-        'state”. The excluded chips are none of those. They are '
-        'rose because an exclusion is the one thing in the sidebar '
-        'that says no, and a red-toned chip next to teal ones makes '
-        'the polarity legible without a label. It is a deliberate '
-        'stretch of the rule, and the app_colors page lists it as '
-        'one of the places the palette bends. The tint recipe '
-        '(0.08 for the fill, 0.35 for the border) is the same one '
-        'the error banner uses, with the border at 0.4 there, and '
-        'it is written out by hand in each place.'),
-
-    ...sec('how the tags reach the model'),
-    ...code('dart', 'lib/services/mistral_client.dart · building the exclusion list', r'''
-    final excludedList = prefs.excludedFields.isEmpty
-        ? '(none)'
-        : prefs.excludedFields.join(', ');'''),
-    ...para('//',
-        'This is the only place the list is consumed besides '
-        'PreferenceBlock.toJson, which puts the same strings in the '
-        'user turn under the key excludedFields. The joined text '
-        'is interpolated into rule 2 of the system prompt, whose last '
-        'sentence begins “Fields to actively avoid, if any:”, so '
-        'with two tags typed it reads, for example, “[war, 20th '
-        'century]”. With nothing excluded the model reads '
-        '“[(none)]”, an explicit empty case rather than an empty '
-        'bracket, which avoids leaving the model to guess whether '
-        'the list was forgotten.'),
-    ...para('//',
-        'Two properties follow from this plumbing, and both are '
-        'worth being honest about. First, the exclusion is advisory. '
-        'It is one clause in a long prompt. A search of lib/ shows '
-        'no other use of the list: nothing filters the response, '
-        'nothing checks the returned titles or keywords against the '
-        'tags. Whether the model honours “avoid war” is a matter of '
-        'its compliance, which the repository does not measure. '
-        'Second, the tags are pasted into the prompt in the user’s '
-        'own words and language, so an English exclusion typed into '
-        'a French session is passed along unchanged and the model '
-        'has to bridge them.'),
-
-    ...sec('what the card does not check'),
-    ...pt('//', 'no conflict with the selection',
-        'nothing compares the exclusions with the selected fields, '
-        'so the user can select “history” and also exclude the '
-        'word history. The prompt would then say both. The '
-        'preference_providers page notes the same gap from the '
-        'controller side.'),
-    ...pt('//', 'case-sensitive duplicates',
-        'addExcludedTag compares exact strings, so war and War '
-        'become two chips.'),
-    ...pt('//', 'no length limit',
-        'a whole sentence can be pasted in and becomes one very wide '
-        'chip and one very long list item in the prompt.'),
-    ...pt('//', 'no persistence',
-        'like the rest of the block, the list is gone on reload.'),
-
-    ...sec('what changed over time'),
-    ...para('//',
-        'The file has two commits, both on 2026-08-06. 7a200e7 '
-        '(09:41 UTC) created it, and 89a9c12 (09:58 UTC) changed the '
-        'icon import from lucide_icons to lucide_icons_flutter to '
-        'repair the web build; the cross icon on each chip and the '
-        'plus in the box are the only two icons it uses. The behaviour is unchanged from the first '
-        'version, and it did not need to change when the backend '
-        'moved from Cerebras to Gemini to Mistral, because the card '
-        'only talks to a provider, not to a model.'),
-
-    ...sec('what is tested'),
-    ...para('//',
-        'No test covers the card or the exclusion plumbing. The '
-        'client test builds a PreferenceBlock with excludedFields '
-        'set to an empty list (test/mistral_client_test.dart) and '
-        'never asserts on the prompt’s rule 2. A test that '
-        'constructs a block with two tags and checks that the '
-        'system prompt contains “[war, 20th century]” would pin the '
-        'only guarantee the feature makes.'),
-
-    ...sec('limits and what is next'),
-    ...pt('//', 'two names for one thing',
-        'themes in the UI, fields in the state and prompt; renaming '
-        'the state to excludedThemes would remove the drift.'),
-    ...pt('//', 'advisory only',
-        'there is no post-check that a returned topic avoids the '
-        'tags.'),
-    ...pt('//', 'raw strings',
-        'no case folding, accent folding or conflict check.'),
-    ...pt('//', 'duplicated input box',
-        'the plus-button TextField here and in the field card could '
-        'be one shared widget with a transform callback.'),
+        r'The chips appear only when there is at least one tag, so an '
+        r'empty list takes no space. Each chip is an InputChip with an '
+        r'x to delete it. The colour is the telling choice: rose, '
+        r'at 8 percent fill and 35 percent border. The selected fields '
+        r'in the neighbouring card are teal. So “wanted” and '
+        r'“unwanted” differ in colour at a glance, with no need to read '
+        r'the title. The box accepts a tag two ways: the plus button, '
+        r'or Enter (onSubmitted). Enter matters on a keyboard: the '
+        r'user can type several tags in a row without reaching for '
+        r'the mouse.'),
     blank,
-    link('→ github.com/XNash/xyno-scholar', 'https://github.com/XNash/xyno-scholar'),
+    ...para('//',
+        r'The card watches the whole preference block, not just the '
+        r'excluded list, so it rebuilds when any preference changes. '
+        r'It does that to get the language for AppStrings. The cost '
+        r'is a handful of widgets, which is nothing here.'),
+
+    ...sec(r'where it sits'),
+    ...para('//',
+        r'sidebar.dart stacks five cards in one scroll column, '
+        r'16 pixels apart: fields, excluded fields, level, '
+        r'scope/tone/mood, then free text. Excluded themes is second, '
+        r'right under the field selector, which is where a user '
+        r'who has just chosen what they want will look for what to '
+        r'rule out. SidebarCard, the shared frame, gives it the title.'),
+
+    ...sec(r'edge cases'),
+    ...pt('//', r'no persistence in this file',
+        r'the preference block starts from PreferenceBlock.initial() '
+        r'(an empty excluded list), so the list is empty each time '
+        r'the app starts. This file does nothing to store it.'),
+    ...pt('//', r'long tags',
+        r'the Wrap lets a long tag take a line of its own. Nothing '
+        r'limits the length.'),
+    ...pt('//', r'a tag that clashes with a selected field',
+        r'nothing stops the user excluding a theme that a chosen '
+        r'field is all about. The two instructions go to the model '
+        r'together and it has to reconcile them.'),
+
+    ...sec(r'how it is tested'),
+    ...para('//',
+        r'No test covers it. test/widget_test.dart checks the unlock '
+        r'screen only. The notifier methods this card calls are not '
+        r'unit-tested either. The verification is by use.'),
+
+    ...sec(r'history'),
+    ...pt('//', r'7a200e7, 2026-08-06 09:41', r'the scaffold commit.'),
+    ...pt('//', r'89a9c12, 2026-08-06 09:58',
+        r'the lucide_icons import became lucide_icons_flutter, which '
+        r'fixed the web build; the x and plus icons here keep their '
+        r'names.'),
   ],
 );

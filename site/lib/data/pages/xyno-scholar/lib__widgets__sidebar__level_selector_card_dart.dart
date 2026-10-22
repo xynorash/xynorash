@@ -5,36 +5,75 @@ final Buffer page = makePage(
   'xyno-scholar/lib/widgets/sidebar/level_selector_card.dart',
   lines: [
     cm('//', '──────────────────────────────────────────'),
-    cm('//', 'level_selector_card.dart — five levels, each with its own explanation'),
-    cm('//', 'a hand-built radio list that shows the user what the model will be told'),
+    cm('//', r'level_selector_card.dart — how hard should the topic be'),
+    cm('//', r'five academic levels as selectable cards with a sentence each'),
     cm('//', '──────────────────────────────────────────'),
     blank,
-    kv('role', 'sidebar card: choose the AcademicLevel that calibrates the corpus'),
-    kv('language', 'Dart / Flutter, ConsumerWidget (no local state)'),
-    kv('size', '88 lines'),
-    kv('history', '2 commits, 7a200e7 (scaffold) and 89a9c12 (icon package import)'),
-    kv('reads', 'preferenceBlockProvider (level, language)'),
-    kv('writes', 'setLevel() on the preference controller'),
-    ...sec('why this card exists'),
-    ...para('//',
-        'The same subject is a different assignment for a first-year '
-        'undergraduate and for a doctoral candidate. The sidebar '
-        'therefore asks for a level, and the level changes what the '
-        'model is allowed to propose: how deep the historiography, '
-        'whether manuscripts in ancient languages are in play, how '
-        'large the primary corpus. Without it, a request for '
-        '“stained glass and theology” would have no way to say '
-        'whether it wants a term paper or a thesis chapter.'),
-    ...para('//',
-        'Level is the one choice in the sidebar whose options need '
-        'explaining. “Licence”, “Master”, “Mémoire” and “Doctorat” '
-        'are labels a French student knows, but they do not tell '
-        'you what the app will do differently for each. So this '
-        'card, unlike the tone and mood chips, shows a sentence '
-        'under every option, all five of them at all times.'),
+    kv(r'role', r'choose the AcademicLevel in PreferenceBlock.level'),
+    kv(r'language', r'Dart / Flutter, a stateless ConsumerWidget'),
+    kv(r'size', r'88 lines, 2 commits'),
+    kv(r'options', r'licence, master, memoire, phd, generalPublic'),
+    kv(r'default', r'licence, set by PreferenceBlock.initial()'),
+    kv(r'history', r'7a200e7 (2026-08-06 09:41), 89a9c12 (09:58)'),
 
-    ...sec('five tiles instead of a radio widget'),
-    ...code('dart', 'lib/widgets/sidebar/level_selector_card.dart · reading the enum', r'''
+    ...sec(r'why this file exists'),
+    ...para('//',
+        r'The same subject is a different task at different levels. '
+        r'“Stained glass in Chartres” is a weekend read for a '
+        r'curious person, a bounded undergraduate paper, or a '
+        r'doctorate with a large archive. The model needs to be told '
+        r'which. This card sets that, and it does it in a way that '
+        r'doesn’t just say the name of a level. Each option is shown '
+        r'with a one-sentence description of what the level means for '
+        r'the topic, so the user chooses by meaning.'),
+
+    ...sec(r'the levels and their sentences'),
+    ...code('dart', r'lib/models/enums.dart · lines 53-65', r'''
+  String descriptionEn() => switch (this) {
+    AcademicLevel.licence =>
+      'Bounded, accessible corpus — no paleography or ancient languages required.',
+    AcademicLevel.master =>
+      'Specialized historiography, situates the topic within a scholarly debate.',
+    AcademicLevel.memoire =>
+      'Focused methodology built around one precise, tractable problématique.',
+    AcademicLevel.phd =>
+      'Original archival contribution, extensive and demanding primary corpus.',
+    AcademicLevel.generalPublic =>
+      'Jargon-free, accessible to a curious non-specialist reader.',
+  };'''),
+    ...para('//',
+        r'The sentences are in the enum, in French and English, and '
+        r'this card only displays them. They are worth reading beside '
+        r'the system prompt, which holds the same calibrations for '
+        r'the model. The prompt’s line for licence reads “bounded, '
+        r'accessible corpus, no paleography or ancient-language '
+        r'skills required”, and the card’s says the same in nearly '
+        r'the same words. So the user is shown what the model is '
+        r'told, and the promise on the screen and the instruction '
+        r'behind it are one text twice. That is a good habit for any '
+        r'interface that drives a model: the labels double as '
+        r'documentation of the prompt.'),
+    blank,
+    ...para('//',
+        r'The order of the enum is the order on screen: licence, master, '
+        r'memoire, phd, generalPublic. Grand public comes last, '
+        r'although it is the easiest level, because it is not on '
+        r'the academic ladder. It is a different axis of audience.'),
+
+    ...sec(r'the widget'),
+    ...code('dart', r'lib/widgets/sidebar/level_selector_card.dart · lines 10-36', r'''
+class LevelSelectorCard extends ConsumerWidget {
+  const LevelSelectorCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final prefs = ref.watch(preferenceBlockProvider);
+    final colors = context.colors;
+    final s = AppStrings(prefs.language);
+
+    return SidebarCard(
+      title: s.levelTitle,
+      child: Column(
         children: AcademicLevel.values.map((level) {
           final isSelected = prefs.level == level;
           final label = prefs.language == 'fr'
@@ -42,31 +81,30 @@ final Buffer page = makePage(
               : level.labelEn();
           final description = prefs.language == 'fr'
               ? level.descriptionFr()
-              : level.descriptionEn();'''),
+              : level.descriptionEn();
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () =>
+                  ref.read(preferenceBlockProvider.notifier).setLevel(level),'''),
     ...para('//',
-        'The card iterates AcademicLevel.values, so the list on '
-        'screen is the enum, in declaration order: licence, master, '
-        'memoire, phd, generalPublic. Adding a sixth level to '
-        'enums.dart would add a sixth tile with no change here, '
-        'provided the new value also implements the four string '
-        'methods the card calls. The order is worth a look. Four '
-        'values climb a ladder of training; the fifth, general '
-        'public, is not a rung at all but a different reader, and '
-        'it sits at the bottom, where a ladder would put “above '
-        'doctorate”. That is a presentation quirk rather than a '
-        'bug, since selecting it is as simple as selecting any '
-        'other.'),
-    ...para('//',
-        'Notice also what is repeated. The language ternary '
-        'prefs.language == "fr" ? x.labelFr() : x.labelEn() occurs '
-        'twice here and three times in scope_tone_mood_card.dart. '
-        'The field catalog has a tidy label(language) method on its '
-        'classes; the enums do not, and every widget that shows an '
-        'enum value re-does the branch. Five copies of the same '
-        'two-way choice are a small invitation to a typo and the '
-        'obvious candidate for a label(String language) method on '
-        'each enum.'),
-    ...code('dart', 'lib/widgets/sidebar/level_selector_card.dart · the selected look (trimmed)', r'''
+        r'This is a ConsumerWidget, not a ConsumerStatefulWidget like '
+        r'the cards with text boxes, because it owns nothing. The '
+        r'selected level is in the preference block, so the build '
+        r'method only reads it, compares, and writes back with '
+        r'setLevel. Options are generated from AcademicLevel.values, so '
+        r'adding a sixth level to the enum adds a sixth card here with '
+        r'no change to this file, provided the enum’s switches get '
+        r'the new case (Dart’s exhaustive switch forces that at '
+        r'compile time). The language test is a plain comparison to '
+        r'fr, with anything else falling to English.'),
+
+    ...sec(r'selected and unselected'),
+    ...code('dart', r'lib/widgets/sidebar/level_selector_card.dart · lines 37-58', r'''
+              child: Container(
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   color: isSelected
@@ -76,21 +114,10 @@ final Buffer page = makePage(
                     color: isSelected ? colors.teal : colors.border,
                     width: isSelected ? 1.5 : 1,
                   ),
-                ),'''),
-    ...para('//',
-        'Selection is shown three ways at once: a pale teal fill '
-        '(10 per cent), a solid teal border that is half a pixel '
-        'heavier than the grey one, and an icon swap, '
-        'checkCircle2 versus an empty circle, coloured teal or muted '
-        'grey. Redundant cues are a good habit for a choice that '
-        'must never be ambiguous; they also mean a user who cannot '
-        'distinguish the teal tint can still read the icon. The '
-        'tile’s corner radius, 8 px, matches the InkWell’s, so the '
-        'tap highlight follows the shape.'),
-    ...code('dart', 'lib/widgets/sidebar/level_selector_card.dart · the tap and the icon (trimmed)', r'''
-              onTap: () =>
-                  ref.read(preferenceBlockProvider.notifier).setLevel(level),'''),
-    ...code('dart', 'lib/widgets/sidebar/level_selector_card.dart · the radio icon', r'''
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Icon(
                       isSelected
                           ? LucideIcons.checkCircle2
@@ -99,115 +126,77 @@ final Buffer page = makePage(
                       color: isSelected ? colors.teal : colors.inkMuted,
                     ),'''),
     ...para('//',
-        'Why hand-build the tile instead of using Flutter’s '
-        'RadioListTile? The code does not say. What the custom '
-        'version buys is visible: a bordered, tinted block that '
-        'uses the same teal recipe as the other selected states in '
-        'the app, with a title and a description laid out in a '
-        'column. What it costs is that nothing in the file marks '
-        'the group as a radio group for assistive technology: a '
-        'search of the sidebar directory finds no Semantics widget, '
-        'and a plain InkWell does not announce a selected state by '
-        'itself.'),
-
-    ...sec('the description is the prompt'),
-    ...para('//',
-        'The sentences under the labels come from '
-        'AcademicLevel.descriptionEn and descriptionFr in '
-        'lib/models/enums.dart. Compare them with rule 5 of the '
-        'system prompt in lib/services/mistral_client.dart, which '
-        'tells the model what to do for each level.'),
-    ...code('dart', 'lib/models/enums.dart · the English description of master', r'''
-    AcademicLevel.master =>
-      'Specialized historiography, situates the topic within a scholarly debate.','''),
-    ...code('dart', 'lib/services/mistral_client.dart · rule 5, master', r'''
-   - master: specialized historiography, situates the topic within a scholarly debate.'''),
-    ...para('//',
-        'They are the same sentence. The memoire, phd, licence and '
-        'general-public lines match in the same way, with only '
-        'small edits (the prompt says “no technical jargon”, the '
-        'UI says “Jargon-free”). I read that as intent: the card '
-        'shows the user, in plain words, the instruction the model '
-        'will receive, so that choosing a level is choosing a '
-        'documented behaviour and not a mystery. The cost is that '
-        'the same text is maintained in two files, with nothing to '
-        'check that they stay aligned. A test that builds the '
-        'system prompt for every level and asserts the English '
-        'description appears in it would remove that risk.'),
-    ...para('//',
-        'The wire value is a third spelling. The prompt and the '
-        'preference JSON use apiValue, which is licence, master, '
-        'memoire, phd and general_public; the general reader is the '
-        'only value whose wire spelling differs from its enum name '
-        '(generalPublic). The prompt’s opening line also sets a '
-        'floor: it describes the user as an undergraduate '
-        '(“licence-level and above”), which is consistent with '
-        'licence being both the first tile and the default in '
-        'PreferenceBlock.initial().'),
-    ...para('//',
-        'One domain note, from general knowledge rather than from the '
-        'repo: in French higher education a mémoire is a piece of '
-        'work, the research dissertation written inside a Master, '
-        'not a degree. The app lists it as a level because what '
-        'changes the model’s output is the shape of the project '
-        '(“one precise, tractable problématique”), and that is a '
-        'property of a mémoire rather than of a person’s training. '
-        'The English label, “Thesis”, keeps that sense.'),
-
-    ...sec('what a change does'),
-    ...para('//',
-        'Tapping a tile calls setLevel on the preference '
-        'controller, which replaces the block with a copy that has '
-        'the new level. Nothing is sent to the network; the choice '
-        'takes effect on the next Generate or Refine, because both '
-        'read the current block at call time. That second point '
-        'matters for refinement: the refine request is built with '
-        'the current preferences, not the ones in force when the '
-        'topic was generated, so switching from licence to phd '
-        'between a generation and a refinement changes the level '
-        'the model is told to calibrate the refined topic to. '
-        'Nothing in the UI warns about this.'),
-    ...para('//',
-        'There is no “unspecified” option. A level is always '
-        'selected, tapping the selected tile re-selects it, and '
-        'the model is always given one. That keeps rule 5 total: '
-        'the prompt never has to say what to do when no level is '
-        'given.'),
-
-    ...sec('what changed over time'),
-    ...para('//',
-        'Two commits, both on 2026-08-06: 7a200e7 at 09:41 UTC '
-        'created the card, and 89a9c12 at 09:58 UTC replaced the '
-        'unmaintained lucide_icons import with lucide_icons_flutter, '
-        'because the old package extended a Flutter class that had '
-        'become final and broke the CI web build. The rest of the '
-        'file is the first version; none of the later backend swap '
-        'commits (Cerebras, Gemini, Mistral) touched it.'),
-
-    ...sec('what is tested'),
-    ...para('//',
-        'Nothing in test/ covers the card or the enum. The enum has '
-        'a fromApiValue helper that falls back to licence for '
-        'unknown input; nothing calls it in the app, which the '
-        'enums page notes, so it is also untested.'),
-
-    ...sec('limits and what is next'),
-    ...pt('//', 'two copies of the descriptions',
-        'enums.dart and the prompt; they match today by authorship, '
-        'not by check.'),
-    ...pt('//', 'no semantics',
-        'radio behaviour is communicated only by icon, border and '
-        'fill.'),
-    ...pt('//', 'five copies of the language ternary',
-        'a label(language) method on each enum would remove them.'),
-    ...pt('//', 'uneven bottom space',
-        'every tile, including the last, has 8 px of bottom padding, '
-        'so this card ends with 24 px under the last tile where '
-        'other cards end with 16.'),
-    ...pt('//', 'silent effect on refine',
-        'changing level between generate and refine changes the '
-        'refinement’s calibration without saying so.'),
+        r'A selected card gets a faint teal fill, a teal border one '
+        r'half pixel thicker, and a filled check icon; the others '
+        r'have a neutral border and an empty circle. Three cues '
+        r'point the same way (colour, thickness, icon), so the '
+        r'selection does not rely on colour alone. The icon is the '
+        r'radio-button convention, drawn by hand: this is a '
+        r'single-choice list, but it is built from an InkWell and a '
+        r'Container and not from Flutter’s own radio widgets. The '
+        r'file does not say why; one effect is that the whole card '
+        r'is the click target and the description can sit beside '
+        r'the label.'),
     blank,
-    link('→ github.com/XNash/xyno-scholar', 'https://github.com/XNash/xyno-scholar'),
+    ...para('//',
+        r'A detail I would check by running it: the InkWell’s ripple is '
+        r'painted on the Material underneath, and the child Container '
+        r'has its own decoration drawn above it. On an unselected '
+        r'card the fill is transparent, so a ripple should show '
+        r'through; on a selected card the tint would cover part of it. '
+        r'I did not run the app to see it.'),
+
+    ...sec(r'the text'),
+    ...code('dart', r'lib/widgets/sidebar/level_selector_card.dart · lines 60-78', r'''
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleSmall?.copyWith(color: colors.ink),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            description,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: colors.inkMuted),
+                          ),
+                        ],
+                      ),
+                    ),'''),
+    ...para('//',
+        r'The label is in the title style, the description is smaller '
+        r'and muted. The Expanded makes the text wrap inside the card. '
+        r'The styles come from the theme, so the card follows any '
+        r'change to app_theme.dart without edits here.'),
+
+    ...sec(r'edge cases'),
+    ...pt('//', r'always one selected',
+        r'level is a single enum value in the preference block, never '
+        r'null. A user cannot deselect: tapping the selected card '
+        r'sets the same value again.'),
+    ...pt('//', r'wire values',
+        r'apiValue gives the strings sent to the model. The enum’s '
+        r'fromApiValue falls back to licence for an unknown string, '
+        r'the same as the default.'),
+    ...pt('//', r'a level that is only a label',
+        r'the five names go to the model as one word, for example '
+        r'general_public, and the prompt defines each. The card’s '
+        r'sentence is not sent, only the name.'),
+
+    ...sec(r'how it is tested'),
+    ...para('//',
+        r'No test covers this card. Nothing in test/ constructs it. '
+        r'The enum’s translations and the apiValue mapping have no '
+        r'test either.'),
+
+    ...sec(r'history'),
+    ...pt('//', r'7a200e7, 2026-08-06 09:41', r'the scaffold commit.'),
+    ...pt('//', r'89a9c12, 2026-08-06 09:58',
+        r'import swap to lucide_icons_flutter, to fix the web build. '
+        r'checkCircle2 and circle are the icons this file uses.'),
   ],
 );

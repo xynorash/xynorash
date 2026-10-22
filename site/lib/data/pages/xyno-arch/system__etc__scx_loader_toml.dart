@@ -5,45 +5,48 @@ final Buffer page = makePage(
   'xyno-arch/system/etc/scx_loader.toml',
   lines: [
     cm('#', '──────────────────────────────────────────'),
-    cm('#', 'scx_loader.toml — a different CPU scheduler at boot'),
-    cm('#', 'scx_lavd, in gaming mode, loaded as a BPF program'),
+    cm('#', r'scx_loader.toml — the CPU scheduler is a config file'),
+    cm('#', r'scx_lavd in Gaming mode, picked at boot'),
     cm('#', '──────────────────────────────────────────'),
     blank,
-    kv('role', 'chooses the sched_ext scheduler and its mode for scx_loader.service'),
-    kv('language', 'TOML; 14 lines, 7 active settings'),
-    kv('size', '1 commit: d552dfd (2026-09-19), unchanged since'),
-    kv('installed as', '/etc/scx_loader.toml by install.sh --system, then enabled --now'),
-    kv('packages', 'scx-scheds and scx-tools, both in packages/pacman.txt'),
+    kv(r'role', r'choose and tune the sched_ext scheduler that scx_loader starts'),
+    kv(r'format', r'TOML, 14 lines'),
+    kv(r'installed', r'/etc/scx_loader.toml by install.sh --system'),
+    kv(r'service', r'scx_loader.service, enabled with --now by the same script'),
+    kv(r'history', r'1 commit: d552dfd (2026-09-19), never edited'),
 
-    ...sec('why this file exists'),
-    ...para(
-        '#',
-        r'The CPU scheduler decides which thread runs on which core '
-        r'and for how long. On Linux it is normally part of the '
-        r'kernel and cannot be swapped without rebuilding it. '
-        r'sched_ext changes that: it lets a scheduler be written as '
-        r'a BPF program and loaded at runtime, replacing the kernel’s '
-        r'own for the whole machine. scx_loader is the small service '
-        r'from the scx tools that loads one at boot and lets you '
-        r'switch between them. This file tells it which scheduler '
-        r'and which mode.'),
-    blank,
-    ...para(
-        '#',
-        r'The README gives the motive in one bullet: “sched_ext / '
-        r'scx_lavd as the system scheduler, in gaming mode.” The '
-        r'first comment in the file gives the mechanism, in two '
-        r'sentences about why a scheduler matters to a game.'),
+    ...sec(r'why this file exists'),
+    ...para('#',
+        r'Linux has one CPU scheduler built in. sched_ext is a kernel '
+        r'feature that lets a different scheduling policy be loaded as a '
+        r'program at runtime, and the scx-scheds package ships several '
+        r'of them. scx_loader is a small service that picks one at boot '
+        r'and starts it. Without this file the service has no opinion '
+        r'about which to use; with it, the choice is part of the '
+        r'repository, next to the other gaming layers in README.md: '
+        r'“sched_ext / scx_lavd as the system scheduler, in gaming '
+        r'mode”. Both packages are in packages/pacman.txt (scx-scheds '
+        r'and scx-tools).'),
 
-    ...sec('the file, in full'),
-    ...code('toml', 'system/etc/scx_loader.toml', r'''
+    ...sec(r'the choice'),
+    ...code('toml', r'system/etc/scx_loader.toml · lines 1-6', r'''
 # sched_ext scheduler loaded at boot by scx_loader.service.
 # scx_lavd = Latency-criticality Aware Virtual Deadline, written by Igalia
 # for Valve's Steam Deck. It spots latency-critical threads (a game's render
 # and input threads) and keeps them from being starved by background load.
 default_sched = "scx_lavd"
-default_mode  = "Gaming"
+default_mode  = "Gaming"'''),
+    ...para('#',
+        r'The comment gives the reasoning: lavd is a scheduler written '
+        r'for handheld gaming that tells which threads matter for '
+        r'latency and protects them. That is why it fits a desktop that '
+        r'also runs games, where a background compile or download '
+        r'should not cost a dropped frame. The two active lines are '
+        r'then plain: which scheduler (default_sched) and which of its '
+        r'modes (default_mode).'),
 
+    ...sec(r'the mode table'),
+    ...code('toml', r'system/etc/scx_loader.toml · lines 8-14', r'''
 [scheds.scx_lavd]
 # Desktop on mains power: no core compaction, use every core.
 gaming_mode     = ["--performance"]
@@ -51,211 +54,79 @@ auto_mode       = ["--autopilot"]
 lowlatency_mode = ["--performance"]
 powersave_mode  = ["--powersave"]
 server_mode     = ["--balanced"]'''),
-    ...para(
-        '#',
-        r'Parsing the file as TOML gives two top-level strings and '
-        r'one table with five keys. That is the whole configuration: '
-        r'which scheduler, which mode, and what each mode means in '
-        r'command-line flags for that scheduler.'),
-
-    ...sec('lavd: what the comment says it is for'),
-    ...para(
-        '#',
-        r'The name expands in the comment: Latency-criticality '
-        r'Aware Virtual Deadline. The comment credits Igalia as '
-        r'the author and Valve’s Steam Deck as the target. The '
-        r'idea that it states is the interesting one. A fair '
-        r'scheduler treats threads alike. A game is not alike: the '
-        r'few threads that render a frame and read input decide '
-        r'whether the game feels smooth, while the many threads of '
-        r'a compiler, a browser or a download only decide how '
-        r'long those things take. lavd tries to work out which '
-        r'threads are latency-critical and to keep them from being '
-        r'starved by the rest. The phrase in the comment is “spots '
-        r'latency-critical threads”.'),
+    ...para('#',
+        r'scx_loader knows five modes by name, and for each scheduler '
+        r'this table says which command-line flags to start it with. '
+        r'The table is the part of the file that does the tuning. Each '
+        r'value is a list of arguments passed to scx_lavd.'),
     blank,
-    ...para(
-        '#',
-        r'The same idea appears elsewhere in this project at '
-        r'a different level. The GameMode setup changes the CPU '
-        r'governor and priorities for the game process; the '
-        r'scheduler changes how every thread on the machine '
-        r'competes. They are complementary, and only one of them '
-        r'is conditional on a game running.'),
-
-    ...sec('default_sched and default_mode'),
-    ...pt(
-        '#',
-        'default_sched = "scx_lavd"',
-        r'the scheduler that scx_loader starts. The installed '
-        r'scx-scheds package contains several; naming one makes the '
-        r'choice explicit.'),
-    ...pt(
-        '#',
-        'default_mode = "Gaming"',
-        r'the mode applied at boot. Of the five modes in the '
-        r'table below, this one picks which flags are used. The '
-        r'other four are inert until something switches to them.'),
+    ...pt('#', r'gaming_mode',
+        r'--performance. This is the active mode. The comment above '
+        r'the table explains the choice: on a desktop on mains power '
+        r'there is no reason to save energy by packing work onto fewer '
+        r'cores, so core compaction is off and every core is used.'),
+    ...pt('#', r'lowlatency_mode',
+        r'also --performance, the same flag as gaming. The repo does '
+        r'not say why two modes share a value. The effect is that '
+        r'choosing either mode starts the scheduler the same way.'),
+    ...pt('#', r'auto_mode',
+        r'--autopilot. The repo does not say what it does.'),
+    ...pt('#', r'powersave_mode',
+        r'--powersave, for the case the comment rules out on this '
+        r'desktop. It is written down anyway, so the table is complete '
+        r'if the mode is ever switched.'),
+    ...pt('#', r'server_mode',
+        r'--balanced.'),
     blank,
-    ...para(
-        '#',
-        r'This is the decision that makes the scheduler a '
-        r'system-wide, always-on choice. gamemode.ini does not '
-        r'switch the scheduler mode when a game starts: its only '
-        r'hooks show notifications. So scx_lavd runs in Gaming mode '
-        r'at the desktop, in the browser and in the compiler, not '
-        r'only inside games. The README’s wording, “as the system '
-        r'scheduler”, says the same. It is a bet that a '
-        r'latency-first scheduler is acceptable for everything this '
-        r'machine does.'),
+    ...para('#',
+        r'What each flag means inside scx_lavd is not in the repo. The '
+        r'only meaning I rely on is the one the comment gives for '
+        r'--performance (no core compaction); the others I report as '
+        r'configured, not as explained.'),
 
-    ...sec('the five modes'),
-    ...para(
-        '#',
-        r'scx_loader defines five named modes and lets each '
-        r'scheduler map them to its own flags. This file maps all '
-        r'five for lavd:'),
-    blank,
-    ...pt(
-        '#',
-        'gaming_mode = --performance',
-        r'the one in use. The comment above it explains the '
-        r'flag: “Desktop on mains power: no core compaction, use '
-        r'every core.”'),
-    ...pt(
-        '#',
-        'lowlatency_mode = --performance',
-        r'identical flags to gaming. On lavd the two modes are '
-        r'therefore indistinguishable, which is worth knowing '
-        r'before expecting a difference from switching.'),
-    ...pt(
-        '#',
-        'auto_mode = --autopilot',
-        r'by name, a mode where the scheduler decides for itself.'),
-    ...pt(
-        '#',
-        'powersave_mode = --powersave',
-        r'the opposite end: favour energy over speed.'),
-    ...pt(
-        '#',
-        'server_mode = --balanced',
-        r'a middle setting for throughput work.'),
-    blank,
-    ...para(
-        '#',
-        r'The last four are dormant on a machine that boots in '
-        r'Gaming mode and never switches. I read the full table as '
-        r'completeness more than need: having all five defined '
-        r'means a later switch with the scx tools works without '
-        r'editing the file. The repo does not say whether it has '
-        r'ever been switched.'),
-
-    ...sec('“no core compaction”: a power feature with no use here'),
-    ...para(
-        '#',
-        r'Core compaction, as the comment uses it, means packing '
-        r'work onto fewer cores so the rest can sleep, saving power '
-        r'at some cost in speed. --performance turns it off. The '
-        r'comment’s justification is that this is a desktop on '
-        r'mains power, and the noctalia config backs the premise '
-        r'from a different angle:'),
-    ...code('toml', 'home/.config/noctalia/config.toml · the machine has no battery', r'''
-# No battery or AC device in /sys/class/power_supply and UPower is not'''),
-    ...para(
-        '#',
-        r'A machine with nothing in the power-supply class is '
-        r'not running on a battery. Power saving has no '
-        r'benefit that outweighs spreading load across all cores. '
-        r'The CPU in the README is a Ryzen 7 5800X, which has eight '
-        r'cores. Where compaction would idle some of them to save a '
-        r'few watts, performance mode keeps all eight available. '
-        r'That reasoning is the comment’s, restated.'),
-
-    ...sec('how it is installed and started'),
-    ...code('bash', 'install.sh · activation', r'''
+    ...sec(r'what the install does around it'),
+    ...code('bash', r'install.sh · line 56', r'''
   sudo systemctl enable --now scx_loader.service nvidia-powerlimit.service'''),
-    ...para(
-        '#',
-        r'The file is copied by the nine-file loop. The service '
-        r'comes from the scx packages in packages/pacman.txt: '
-        r'scx-scheds carries the schedulers themselves and '
-        r'scx-tools the loader and its command line, as I '
-        r'understand the split. '
-        r'enable --now makes it start at every boot and starts it '
-        r'immediately, so the switch happens during the install, '
-        r'before any reboot.'),
-    blank,
-    ...para(
-        '#',
-        r'There is a sharp edge in how that line interacts with the '
-        r'script’s set -e. If scx_loader cannot start, for example '
-        r'because the running kernel was built without sched_ext, '
-        r'enable --now returns a failure and the script stops there. '
-        r'The group-membership and /etc/hosts steps that follow '
-        r'would be skipped. This is my reading of the shell code, not '
-        r'something I ran, and it needs a kernel without the '
-        r'feature, which I do not expect of Arch’s stock kernel.'),
+    ...para('#',
+        r'The file is copied to /etc, then the service is enabled and '
+        r'started in the same command that enables the GPU power-limit '
+        r'unit. enable --now means the scheduler changes without a '
+        r'reboot, and survives the next one. Starting it from the '
+        r'installer is also how the scheduler is switched on for the '
+        r'first time.'),
 
-    ...sec('a safety net I did not build, but rely on'),
-    ...para(
-        '#',
-        r'Replacing the scheduler for the entire machine sounds '
-        r'dangerous. A property of sched_ext, as I understand its '
-        r'design, is that it is built to fail safe: if a BPF '
-        r'scheduler stops running tasks within a time limit, or '
-        r'exits, the kernel throws it out and goes back to its '
-        r'default scheduler. A bad scheduler therefore costs '
-        r'responsiveness, not the machine. The repo does not '
-        r'mention this property; it is part of why a configuration '
-        r'file like this one is a low-risk thing to install '
-        r'automatically.'),
+    ...sec(r'trade-offs and failure modes'),
+    ...pt('#', r'kernel support',
+        r'sched_ext needs a kernel built with it. If the kernel lacks '
+        r'it, scx_loader cannot attach a scheduler and the system '
+        r'carries on with the default one, as I understand the design '
+        r'of the feature, since the built-in scheduler is the fallback. '
+        r'The repo does not test this case.'),
+    ...pt('#', r'the scheduler is a program',
+        r'if it crashes or is stopped, the kernel drops back to the '
+        r'default scheduler. That safety property comes from sched_ext, '
+        r'not from this file.'),
+    ...pt('#', r'edits need a restart',
+        r'the file is read when the service starts; changing it later '
+        r'means restarting scx_loader.service.'),
+    ...pt('#', r'one machine',
+        r'the comment “desktop on mains power” is specific. On a laptop '
+        r'the powersave mode would be the one to change to.'),
 
-    ...sec('how I would check it, and what I could not'),
-    ...para(
-        '#',
-        r'The check is to ask the system which scheduler is active. '
-        r'scx_loader exposes a command line tool (scxctl) for this, '
-        r'and the kernel publishes the active scheduler under '
-        r'/sys/kernel/sched_ext. I ran neither: my sandbox has no '
-        r'sched_ext (that directory does not exist there), and the '
-        r'machine the file describes was out of reach. What I did '
-        r'verify is '
-        r'the file: it parses as TOML, and the table keys are '
-        r'exactly the five mode names above.'),
+    ...sec(r'how I checked it'),
+    ...para('#',
+        r'No test exists. I checked the machine: the tracked file is '
+        r'identical to /etc/scx_loader.toml, scx_loader.service is '
+        r'enabled, and the kernel reports an active sched_ext scheduler '
+        r'whose name starts with lavd (the version string I read was '
+        r'lavd_1.1.3 for x86_64). That confirms the intended '
+        r'scheduler is the one running. I did not measure frame times, '
+        r'so the benefit itself is the author’s claim, not my result.'),
 
-    ...sec('history'),
-    ...para(
-        '#',
-        r'One commit, d552dfd, the initial one on 2026-09-19. Its '
-        r'body lists “scx_lavd scheduler” among the gaming features. '
-        r'No later edit, so no mode has been tried and abandoned in '
-        r'the history that exists. If Nash experimented, the '
-        r'experiments are not in the repo.'),
-
-    ...sec('limits, and what is next'),
-    ...pt(
-        '#',
-        'no measurement',
-        r'the repo contains no benchmark or frame-time capture '
-        r'that compares scx_lavd to the default scheduler. The '
-        r'claim rests on the scheduler’s design goals as the comment '
-        r'states them. MangoHud is configured, so the means exist.'),
-    ...pt(
-        '#',
-        'flags are version-bound',
-        r'--performance, --autopilot and the others are options of '
-        r'one scheduler release. A future version that renames one '
-        r'could make a mode fail to apply, and a table full of '
-        r'dormant modes would hide it until someone switched.'),
-    ...pt(
-        '#',
-        'always on',
-        r'nothing returns the machine to the default scheduler '
-        r'when no game is running. If that ever matters, the '
-        r'GameMode start and end hooks are the natural place to '
-        r'switch modes.'),
-    blank,
-    link('→ github.com/xynorash/xyno-arch',
-        'https://github.com/xynorash/xyno-arch'),
+    ...sec(r'history'),
+    ...pt('#', r'd552dfd, 2026-09-19',
+        r'the initial commit lists “scx_lavd scheduler” among its '
+        r'gaming features. The file has had no later edits across the '
+        r'22 commits.'),
   ],
 );

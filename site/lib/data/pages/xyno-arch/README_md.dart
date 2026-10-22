@@ -267,8 +267,12 @@ backup() {
         'queue', 'for a long path; Steam download settings sit '
         'beside it.'),
     ...bullet('compositor: direct scanout and tearing',
-        'tearing is allowed globally but only Steam windows opt in '
-        'with an immediate rule; the desktop stays tear-free.'),
+        'two different mechanisms. Direct scanout is a global render '
+        'setting (direct_scanout = 2); the config does not scope it to '
+        'Steam. Tearing is allowed '
+        'globally but only windows whose class starts with steam_app_ '
+        'opt in, through an immediate rule; other '
+        'windows do not get that rule.'),
     ...bullet('GameMode: automatic',
         'a window.open hook plus gamemode-attach plus gamemode.ini.'),
     ...bullet('overlay: MangoHud',
@@ -418,6 +422,24 @@ cd ~/xyno-arch
         'or the newest network tuning. Its note on files that are '
         'not installed automatically names three, while the '
         'installer prints five.'),
+    ...bullet('the README’s tearing line is looser than the code',
+        'it says “Direct scanout and tearing for Steam windows only”. '
+        'In hyprland.lua direct scanout is not scoped to Steam at all, '
+        'and the tearing rule matches steam_app_ games, not every '
+        'Steam window. The behaviour is what the README intends; the '
+        'wording is not exact. I re-read the key table against the '
+        'binds in hyprland.lua and every row in it is still correct. '
+        'It is incomplete, not wrong.'),
+    ...bullet('one installed file is not applied until a restart',
+        'install.sh copies resolved.conf.d/10-no-llmnr.conf but '
+        'reloads sysctl, systemd and logind only. I found no restart '
+        'of systemd-resolved in the script, so, as far as I know, '
+        'LLMNR stays on until the service or the machine restarts.'),
+    ...bullet('the printed PAM file has drifted',
+        'on the machine I checked, /etc/pam.d/greetd carries two '
+        'extra pam_succeed_if guards that skip the keyring for the '
+        'greeter user. The tracked copy does not have them. Every '
+        'other system file I could compare was identical.'),
     ...bullet('a stale comment',
         'the first line of config.toml still says “translated to '
         'noctalia + niri”, though the compositor is Hyprland.'),

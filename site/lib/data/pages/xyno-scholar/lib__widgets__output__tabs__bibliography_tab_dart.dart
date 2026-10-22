@@ -5,70 +5,33 @@ final Buffer page = makePage(
   'xyno-scholar/lib/widgets/output/tabs/bibliography_tab.dart',
   lines: [
     cm('//', '──────────────────────────────────────────'),
-    cm('//', 'bibliography_tab.dart — three starting sources, each one click from a real search'),
-    cm('//', 'the app does not vouch for the citations; it makes them cheap to check'),
+    cm('//', r'bibliography_tab.dart — three books, each one a search away'),
+    cm('//', r'cards for the starter reading list, with links that search, not link'),
     cm('//', '──────────────────────────────────────────'),
     blank,
-    kv('role', 'second tab of a narrow topic: the starter bibliography, as cards with search links'),
-    kv('language', 'Dart / Flutter, StatelessWidget + one private button widget'),
-    kv('size', '148 lines'),
-    kv('history', '2 commits, 7a200e7 (scaffold) and 89a9c12 (icon package import)'),
-    kv('data', 'List<BibliographyEntry> from NarrowTopic.starterBibliography'),
-    kv('links to', 'Google Scholar, JSTOR, WorldCat (search pages, not the works)'),
-    ...sec('the problem this tab has to solve'),
-    ...para('//',
-        'A research assistant that hands a student a reading list '
-        'has a trust problem built in. The list comes from a '
-        'language model, and language models are known to produce '
-        'citations that look right and do not exist. The system '
-        'prompt in lib/services/mistral_client.dart knows it: rule '
-        '6 says every subject must name “REAL, VERIFIABLE events, '
-        'works, people, or documents” and “Never invent anecdotes '
-        'or fabricate references, titles, or names”. A rule in a '
-        'prompt is a request, though, not a guarantee, and the '
-        'bibliography is where a failure would hurt most, since a '
-        'student may go and look for the book.'),
-    ...para('//',
-        'This file is the app’s answer on the display side. It '
-        'does not try to decide which citations are real. It makes '
-        'each of the three entries one click away from a search '
-        'in a catalogue that would know: Google Scholar, JSTOR '
-        'and WorldCat. If the book exists, the search finds it. If '
-        'it does not, the student finds out in seconds, from a '
-        'source other than the model.'),
+    kv(r'role', r'second tab of a narrow topic: the starter bibliography'),
+    kv(r'language', r'Dart / Flutter, a stateless widget and a private button'),
+    kv(r'size', r'148 lines, 2 commits'),
+    kv(r'input', r'List of BibliographyEntry and a language code, nothing else'),
+    kv(r'outputs', r'one card per entry; three outbound searches per card'),
+    kv(r'history', r'7a200e7 (2026-08-06 09:41), 89a9c12 (09:58)'),
 
-    ...sec('what the model is asked for'),
+    ...sec(r'why this file exists'),
     ...para('//',
-        'The prompt’s schema gives each entry six string fields: '
-        'authors, year, title, publication, type (one of book, '
-        'article or primary_source) and relevance. Narrow mode '
-        'asks for exactly three entries, and the refine request '
-        'repeats that requirement. The schema deliberately has no '
-        'URL and no DOI field. That absence is a design choice, '
-        'whether or not it was a conscious one: a model asked for '
-        'links will produce plausible links, and a plausible link '
-        'that leads nowhere is worse than none. By asking only for '
-        'facts a human can check, the app can build every link '
-        'itself, from fields it controls. The repository does not '
-        'state this reasoning, so treat it as a reading of the '
-        'schema.'),
-    ...code('dart', 'lib/models/bibliography_entry.dart · tolerant parsing', r'''
-      authors: json['authors']?.toString() ?? '',
-      year: json['year']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      publication: json['publication']?.toString() ?? '',
-      type: json['type']?.toString() ?? 'book','''),
+        r'A research topic is only useful if you can start reading. The '
+        r'model is asked for a starter bibliography with every narrow '
+        r'topic: mistral_client.dart’s refine instruction even states '
+        r'the shape, “exactly 3 starterBibliography entries”. This '
+        r'widget is where those entries become something you can '
+        r'act on. It turns each one into a card and gives it three '
+        r'ways out, Google Scholar, JSTOR and WorldCat.'),
+    blank,
     ...para('//',
-        'Parsing is deliberately forgiving: every field goes '
-        'through toString(), so a model that returns the year as a '
-        'number (1998 instead of "1998") still parses, and a '
-        'missing field becomes an empty string rather than an '
-        'exception. The one default that is not empty is type, '
-        'which falls back to book. The cost of that forgiveness '
-        'shows up in the widget, as the limits section explains.'),
+        r'The interesting decision is in the first twelve lines. The '
+        r'links are not links to the works. They are searches.'),
 
-    ...sec('three search links built with Uri.https'),
-    ...code('dart', 'lib/widgets/output/tabs/bibliography_tab.dart · the link builders', r'''
+    ...sec(r'the three search links'),
+    ...code('dart', r'lib/widgets/output/tabs/bibliography_tab.dart · lines 9-19', r'''
 Uri _googleScholarUri(BibliographyEntry e) => Uri.https(
   'scholar.google.com',
   '/scholar',
@@ -81,39 +44,32 @@ Uri _jstorUri(BibliographyEntry e) =>
 Uri _worldcatUri(BibliographyEntry e) =>
     Uri.https('search.worldcat.org', '/search', {'q': e.title});'''),
     ...para('//',
-        'Each builder uses Uri.https with a queryParameters map '
-        'instead of gluing a string together. Dart percent-encodes '
-        'the values, so a title with an ampersand, a quotation mark, '
-        'an accent or a colon cannot break out of the query or '
-        'change what is being asked. That is not decoration. These '
-        'strings come from a model and are shown to a person who '
-        'will click; a hand-built URL would be a place where a '
-        'stray character turns a search into something else.'),
-    ...para('//',
-        'The three builders differ in what they send. Google '
-        'Scholar gets authors and title in one query, which is how '
-        'people search for a known work there. JSTOR and WorldCat '
-        'get the title alone. The code gives no reason for the '
-        'difference. A plausible one, offered as a guess, is that '
-        'the model’s author strings (“Georges Duby”, “Duby, G.”, '
-        '“Duby et al.”) are inconsistent, and a catalogue’s title '
-        'index is more forgiving than its author index, while '
-        'Scholar’s full-text ranking uses both. The endpoint paths '
-        'are what the code uses; I did not test that each site '
-        'still answers on them.'),
-    ...pt('//', 'Scholar',
-        'broadest; finds articles, books, citations and often a '
-        'link to a full text.'),
-    ...pt('//', 'JSTOR',
-        'journals and book chapters in the humanities, a natural '
-        'target for the fields the app defaults to.'),
-    ...pt('//', 'WorldCat',
-        'library holdings, the right check for a book and for which '
-        'library has it.'),
+        r'Each function builds a URL to a search results page. Google '
+        r'Scholar gets the authors and the title joined by a space, '
+        r'which narrows a common title to the right author. JSTOR and '
+        r'WorldCat get the title alone. Uri.https takes the query as a '
+        r'map and percent-encodes it, so accents, quotes and '
+        r'ampersands in a French title cannot break the address. That '
+        r'is the reason to use the constructor rather than gluing a '
+        r'string together.'),
     blank,
+    ...para('//',
+        r'Why search rather than link? The file does not say, so this is '
+        r'my reading. The entries come from a language model, and a '
+        r'model can produce a plausible reference that does not exist, or '
+        r'get a year or a publisher wrong. A direct link would claim the '
+        r'work exists. A search link claims only that this is worth '
+        r'looking up, and lets the three catalogues answer. It also '
+        r'needs no URL from the model, which the model could invent.'),
+    blank,
+    ...para('//',
+        r'Notice what is left out. The year and the publication are not '
+        r'in any query. That is probably deliberate, since a wrong year '
+        r'would hide the right result, but nothing in the code '
+        r'records the reason.'),
 
-    ...sec('the type badge'),
-    ...code('dart', 'lib/widgets/output/tabs/bibliography_tab.dart · _typeLabel', r'''
+    ...sec(r'the type label'),
+    ...code('dart', r'lib/widgets/output/tabs/bibliography_tab.dart · lines 21-29', r'''
 String _typeLabel(String type, String language) {
   final fr = language == 'fr';
   return switch (type) {
@@ -124,28 +80,20 @@ String _typeLabel(String type, String language) {
   };
 }'''),
     ...para('//',
-        'This is a four-line localisation of a three-value enum '
-        'carried as a string. The language is the topic’s language, '
-        'passed down from the response, not the toggle in the app '
-        'bar. The ‘article’ branch picks the same word in both '
-        'languages, which makes the ternary redundant but keeps the '
-        'three cases parallel. The default branch returns the raw '
-        'value, so if the model sends a type outside the schema, '
-        'say “thesis”, the badge shows that word untranslated '
-        'instead of failing.'),
-    ...para('//',
-        'The type matters outside this file, too. '
-        'lib/services/bibtex_export.dart maps book to a BibTeX '
-        'book, article to article and primary_source (and anything '
-        'else) to misc, and reads the publication field as the '
-        'publisher, the journal or the howpublished note '
-        'accordingly. That is worth knowing here because the '
-        'publication string is a single field whose meaning '
-        'depends on the type, while this tab shows it the same '
-        'way for all three.'),
+        r'The model is told to answer with one of three type strings. The '
+        r'comment in the model class lists them: book, article, '
+        r'primary_source. The switch translates them for the chip. Two '
+        r'details. The fallback arm, _ => type, shows an unknown value '
+        r'as it came, so a model that invents a fourth type produces an '
+        r'ugly chip, not a crash. And the article line has a ternary '
+        r'whose two branches are the same word, which is correct '
+        r'(article is the same in both languages) but reads like a '
+        r'leftover; a plain string would say the same thing. The model '
+        r'class also defaults a missing type to book, so a response '
+        r'with no type gets a Book chip.'),
 
-    ...sec('the card'),
-    ...code('dart', 'lib/widgets/output/tabs/bibliography_tab.dart · title and badge (trimmed)', r'''
+    ...sec(r'the widget'),
+    ...code('dart', r'lib/widgets/output/tabs/bibliography_tab.dart · lines 61-91', r'''
                 Row(
                   children: [
                     Expanded(
@@ -162,40 +110,70 @@ String _typeLabel(String type, String language) {
                         _typeLabel(entry.type, language),
                         style: const TextStyle(fontSize: 11),
                       ),
-                      backgroundColor: colors.amber.withValues(alpha: 0.14),'''),
-    ...para('//',
-        'Each entry is a raised white block (surfaceRaised, a 10 px '
-        'radius, a one pixel border, 16 px padding, 14 px between '
-        'cards): the same hand-built recipe the outline tab and the '
-        'notebook drawer use. The title is set in the serif face, '
-        'Fraunces, as an item to read; the type is an amber chip, '
-        'compact density, at 11 px, to be glanced at. Amber is the '
-        'accent the app uses for emphasis, here against the teal '
-        'used for the interactive chips elsewhere. One more '
-        'decision sits in the structure: the title is wrapped in '
-        'Expanded so that a long title wraps and pushes the chip '
-        'neither off the card nor over the text.'),
-    ...code('dart', 'lib/widgets/output/tabs/bibliography_tab.dart · the meta line and the relevance note', r'''
+                      backgroundColor: colors.amber.withValues(alpha: 0.14),
+                      side: BorderSide(
+                        color: colors.amber.withValues(alpha: 0.4),
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
                 Text(
                   '${entry.authors} · ${entry.year} · ${entry.publication}',
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(color: colors.inkMuted),
-                ),
-                const SizedBox(height: 10),
-                MarkdownText(entry.relevance),'''),
+                ),'''),
     ...para('//',
-        'Authors, year and publication are joined with a middle dot '
-        'on one muted line, the classic bibliographic shorthand. '
-        'The relevance note, the model’s sentence on why this '
-        'source matters for this topic, goes through MarkdownText '
-        '(lib/widgets/common/markdown_text.dart) because the prompt '
-        'allows light Markdown in “relevance notes”. That widget '
-        'also unescapes HTML entities as a safety net, which pairs '
-        'with the sanitiser run on every response in the client.'),
+        r'A card is a column. The top row has the title in the serif '
+        r'face at 16 pixels, which gives it the feel of a book spine, '
+        r'and an amber chip with the type on the right. The title sits '
+        r'in an Expanded so a long title wraps instead of pushing the '
+        r'chip off the card. Under it, one muted line holds '
+        r'authors, year and publication, separated by middle dots. The '
+        r'card’s own container, with the raised surface colour, the '
+        r'10-pixel radius and the border, is built a few lines above.'),
+    blank,
+    ...code('dart', r'lib/widgets/output/tabs/bibliography_tab.dart · lines 92-115', r'''
+                const SizedBox(height: 10),
+                MarkdownText(entry.relevance),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _LinkButton(
+                      label: 'Google Scholar',
+                      icon: LucideIcons.graduationCap,
+                      uri: _googleScholarUri(entry),
+                    ),
+                    _LinkButton(
+                      label: 'JSTOR',
+                      icon: LucideIcons.library,
+                      uri: _jstorUri(entry),
+                    ),
+                    _LinkButton(
+                      label: 'WorldCat',
+                      icon: LucideIcons.archive,
+                      uri: _worldcatUri(entry),
+                    ),
+                  ],
+                ),'''),
+    ...para('//',
+        r'The relevance line, the sentence that says why this book '
+        r'belongs on this topic, goes through MarkdownText. That is the '
+        r'shared renderer for every generated prose field (its own '
+        r'doc comment lists relevance among them), so bold and italics '
+        r'in a model answer render properly. The buttons are in a Wrap '
+        r'so that on a narrow screen the third drops to a second line. '
+        r'The button labels are plain strings, not in l10n/strings.dart: '
+        r'they are proper names, the same in both languages.'),
 
-    ...sec('the link buttons'),
-    ...code('dart', 'lib/widgets/output/tabs/bibliography_tab.dart · the private button', r'''
+    ...sec(r'the button, and where it goes'),
+    ...code('dart', r'lib/widgets/output/tabs/bibliography_tab.dart · lines 136-147', r'''
+  @override
+  Widget build(BuildContext context) {
     return OutlinedButton.icon(
       onPressed: () => launchUrl(uri, mode: LaunchMode.externalApplication),
       icon: Icon(icon, size: 14),
@@ -204,82 +182,55 @@ String _typeLabel(String type, String language) {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         visualDensity: VisualDensity.compact,
       ),
-    );'''),
+    );
+  }'''),
     ...para('//',
-        'A private _LinkButton keeps the three buttons identical: '
-        'an outlined button with an icon (graduationCap for '
-        'Scholar, library for JSTOR, archive for WorldCat), a '
-        '12 px label and compact density. launchUrl with '
-        'LaunchMode.externalApplication opens the search outside '
-        'the app; on the web build that means a new browser tab, so '
-        'the student does not lose their topic page. This tab sends '
-        'nothing anywhere until a link is clicked, and what then '
-        'leaves is the entry’s own title and authors, sent to the '
-        'site the user chose.'),
-    ...para('//',
-        'All three links appear on every entry, whatever its type. '
-        'A primary source (a papal letter, a chronicle) is unlikely '
-        'to be found by title on JSTOR, and a journal article does '
-        'not live in a library catalogue. Choosing the links by '
-        'type would be a small switch; the code shows all three, '
-        'and lets the user decide.'),
+        r'launchUrl with LaunchMode.externalApplication opens the '
+        r'search outside the app. On the web build that is a new '
+        r'browser tab, which matters here: the user keeps the topic '
+        r'open and does not lose their place. The Future that '
+        r'launchUrl returns is ignored, so a blocked pop-up produces '
+        r'no message. The same call and mode are used for links in '
+        r'markdown_text.dart, so the app opens every outside link in '
+        r'the same way.'),
 
-    ...sec('where it is wired'),
-    ...para('//',
-        'NarrowTopicView in lib/widgets/output/narrow_topic_view.dart '
-        'creates the tab as the second child of a TabBarView inside '
-        'a fixed 620 px box, wrapped in its own scroll view, and '
-        'passes topic.starterBibliography and the response’s '
-        'language. The same list also feeds the Export BibTeX '
-        'button in that file, so what the student sees as three '
-        'cards and what they can copy into a reference manager are '
-        'one data set. The tab’s label comes from AppStrings: '
-        '“Bibliographie de départ” or “Starter Bibliography”. The '
-        'word “starter” can be read as the app’s own hedge: three '
-        'sources are a way in, not a survey.'),
+    ...sec(r'edge cases'),
+    ...pt('//', r'empty fields',
+        r'every field in BibliographyEntry.fromJson falls back to an '
+        r'empty string. A card with an empty title would search '
+        r'for nothing, and with empty authors the Google Scholar query '
+        r'begins with a space. Neither crashes.'),
+    ...pt('//', r'fewer than three entries',
+        r'the widget maps whatever list it gets, so zero entries '
+        r'draw an empty column. It does not enforce the three.'),
+    ...pt('//', r'no state',
+        r'the widget is stateless; there is nothing to dispose and '
+        r'nothing to lose on a rebuild.'),
 
-    ...sec('what changed over time'),
+    ...sec(r'how it is tested'),
     ...para('//',
-        'The file has two commits, both on 2026-08-06. 7a200e7 '
-        '(09:41 UTC) is the scaffold and contains the whole design '
-        'described here. 89a9c12 (09:58 UTC) changes the icon '
-        'import to lucide_icons_flutter. Nothing about the links '
-        'or the card layout changed through the three backend '
-        'swaps, which is the intended outcome of a design whose '
-        'inputs are six strings.'),
+        r'There is no widget test for this file. test/widget_test.dart '
+        r'has a single test, that the unlock screen shows on first '
+        r'run. What is tested is the data side: '
+        r'test/mistral_client_test.dart parses a narrow response, so '
+        r'the BibliographyEntry objects this widget receives are '
+        r'covered up to the model class. The layout and the three URLs '
+        r'are checked only by looking.'),
 
-    ...sec('what is tested'),
+    ...sec(r'where it is used'),
     ...para('//',
-        'The tab has no test. What is tested is its input: in '
-        'test/mistral_client_test.dart the narrow-scope case '
-        'builds three entries of types book, article and '
-        'primary_source and asserts that '
-        'starterBibliography has length 3. The URL builders are '
-        'pure functions and would be easy to test, for instance '
-        'that a title containing “&” and “é” round-trips through '
-        'Uri.queryParameters, but the functions are private to the '
-        'library, so a test would first need them made public or '
-        'marked visible for testing.'),
+        r'narrow_topic_view.dart puts it in the second tab, between '
+        r'Intersection and Outline, passing topic.starterBibliography '
+        r'and the language. The tab body is wrapped in a '
+        r'SingleChildScrollView by the caller, which is why this '
+        r'widget has no scrolling of its own.'),
 
-    ...sec('limits and what is next'),
-    ...pt('//', 'empty fields leave stray separators',
-        'because missing values parse to empty strings, an entry '
-        'without a year renders as “Author ·  · Publisher”; the '
-        'line is not assembled from non-empty parts.'),
-    ...pt('//', 'the app cannot tell if a source is real',
-        'it only makes checking easy. A search that returns '
-        'nothing is a signal, not a verdict, since the title may '
-        'be correct in another language or edition.'),
-    ...pt('//', 'one query shape per site',
-        'no quoting of the title, so a short or common title can '
-        'return noise; wrapping it in quotation marks is a '
-        'one-character change per builder.'),
-    ...pt('//', 'links not chosen by type',
-        'primary sources get the same three buttons as books.'),
-    ...pt('//', 'fixed visible count',
-        'the prompt demands exactly three; the widget would render '
-        'any number.'),
-    blank,
-    link('→ github.com/XNash/xyno-scholar', 'https://github.com/XNash/xyno-scholar'),
+    ...sec(r'history'),
+    ...pt('//', r'7a200e7, 2026-08-06 09:41',
+        r'the scaffold commit, with the whole widget in place.'),
+    ...pt('//', r'89a9c12, 2026-08-06 09:58',
+        r'“Fix web build: replace unmaintained lucide_icons with '
+        r'lucide_icons_flutter”. Seventeen minutes later the import '
+        r'changed to the maintained package; the icon names did not.'),
   ],
 );

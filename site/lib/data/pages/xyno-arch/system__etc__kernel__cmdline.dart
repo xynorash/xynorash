@@ -5,243 +5,138 @@ final Buffer page = makePage(
   'xyno-arch/system/etc/kernel/cmdline',
   lines: [
     cm('#', '──────────────────────────────────────────'),
-    cm('#', 'cmdline — five words that find the root filesystem'),
-    cm('#', 'one line, baked into every unified kernel image'),
+    cm('#', r'cmdline — one line that tells the kernel where the system is'),
+    cm('#', r'baked into the boot image, so nobody can edit it at the menu'),
     cm('#', '──────────────────────────────────────────'),
     blank,
-    kv('role', 'the kernel command line that mkinitcpio embeds in each UKI'),
-    kv('format', 'one line, five space-separated parameters, 106 bytes'),
-    kv('size', '1 line, 1 commit: d552dfd (2026-09-19), never edited since'),
-    kv('installed by', 'nobody: install.sh prints it as a manual, machine-specific file'),
-    kv('checked here', 'split on spaces: root, zswap, rootflags, rw, rootfstype'),
+    kv(r'role', r'kernel command line for the Unified Kernel Image'),
+    kv(r'format', r'a single line of space-separated parameters, 105 characters'),
+    kv(r'size', r'1 line, 1 commit: d552dfd (2026-09-19), never edited since'),
+    kv(r'installed', r'never automatically; install.sh --system only prints it'),
+    kv(r'machine bound', r'yes: it names one disk partition by PARTUUID'),
 
-    ...sec('why this file exists'),
-    ...para(
-        '#',
-        r'A kernel needs to be told where its root filesystem is, '
-        r'and with a unified kernel image (UKI) there is no '
-        r'bootloader config to put that in: the command line is '
-        r'part of the image. mkinitcpio builds the image, and, as I '
-        r'understand its documentation, takes the command line from '
-        r'a file named /etc/kernel/cmdline when no option gives one. '
-        r'This file is that source. The installer’s own words for '
-        r'it are “kernel command line baked into the UKI”.'),
+    ...sec(r'why this file exists'),
+    ...para('#',
+        r'On a classic Linux install the command line lives in the boot '
+        r'loader entry, where you can change it with a text editor or, in '
+        r'a pinch, at the boot menu. This machine boots a Unified Kernel '
+        r'Image instead (see linux.preset and loader.conf). A UKI is one '
+        r'EFI file that carries the kernel, the initramfs and the command '
+        r'line together, so the command line has to come from somewhere at '
+        r'build time. This file is that somewhere. As I understand '
+        r'mkinitcpio, it reads /etc/kernel/cmdline when it assembles a '
+        r'UKI; the installer says the same thing in its own words: '
+        r'“kernel command line baked into the UKI”.'),
     blank,
-    ...para(
-        '#',
-        r'Two consequences follow from “baked in”, and both shape '
-        r'the rest of the system. Changing the file changes nothing '
-        r'until the images are rebuilt, which is why the installer’s '
-        r'last line says to run mkinitcpio -P. And the loader can '
-        r'not be used to change it for one boot, because loader.conf '
-        r'sets editor no. The command line is therefore a build '
-        r'input, not a runtime knob.'),
+    ...para('#',
+        r'The consequence is the interesting part. Changing a boot '
+        r'parameter is no longer an edit to a boot entry. It is an edit '
+        r'to this file followed by a rebuild, which is exactly what the '
+        r'installer tells you to do at the end: “compare them by hand, '
+        r'then run: sudo mkinitcpio -P”.'),
 
-    ...sec('the file, parameter by parameter'),
-    ...para(
-        '#',
-        r'The file is a single line. To keep a disk identifier out '
-        r'of this page I show the parameters as fragments; every '
-        r'fragment below is copied from the file.'),
-    ...code('text', 'system/etc/kernel/cmdline · the four readable parameters', r'''
-zswap.enabled=0
-rootflags=subvol=@
-rw
-rootfstype=btrfs'''),
-    ...para(
-        '#',
-        r'The remaining parameter is root=PARTUUID=<a 36-character '
-        r'GUID>. I will come to it first, because it is the one that '
-        r'makes the file unportable.'),
-
-    ...sec('root=PARTUUID=...: naming the partition by identity'),
-    ...para(
-        '#',
-        r'There are several ways to say which partition holds the '
-        r'root filesystem: a device node (/dev/nvme0n1p2), a '
-        r'filesystem UUID, a label, or a PARTUUID. A device node can '
-        r'change when a disk is added or the controller enumerates in '
-        r'a different order. A PARTUUID is stored in the GPT '
-        r'partition table, so it follows the partition, and, unlike '
-        r'a filesystem UUID, it survives reformatting that '
-        r'partition. The repo gives no reason for choosing it. The '
-        r'reasons above are my own, and they are the standard '
-        r'arguments.'),
+    ...sec(r'the file, in full'),
+    ...code('text', r'system/etc/kernel/cmdline · line 1', r'''
+root=PARTUUID=49a7c1a3-ff9d-4bbf-b68f-ab105487c35f zswap.enabled=0 rootflags=subvol=@ rw rootfstype=btrfs'''),
+    ...para('#', r'Five parameters. Taking them one at a time:'),
     blank,
-    ...para(
-        '#',
-        r'What the repo does record is the consequence. The value '
-        r'belongs to one disk. Copied to another machine, this file '
-        r'produces a kernel that cannot find its root and stops in '
-        r'the initramfs emergency shell. That is the clearest '
-        r'reason in the project for not installing the file '
-        r'automatically, and install.sh agrees: it lists the file '
-        r'among the five it will not touch.'),
-    ...code('bash', 'install.sh · why it is on the manual list', r'''
-  echo "  system/etc/kernel/cmdline      kernel command line baked into the UKI"'''),
-    ...para(
-        '#',
-        r'As I understand it, the initramfs resolves root=PARTUUID '
-        r'through its udev hook. That is another link in the chain: '
-        r'etc/mkinitcpio.conf has udev in HOOKS, and the parameter '
-        r'relies on udev having enumerated the partition tables of '
-        r'the block devices by the time root is mounted. It is a '
-        r'quiet dependency between two files in different '
-        r'directories.'),
+    ...pt('#', r'root=PARTUUID=49a7c1a3-…',
+        r'which partition to mount as /. A PARTUUID is the identifier '
+        r'stored in the partition table, not in the filesystem, so it '
+        r'survives re-formatting the partition but not replacing the '
+        r'disk. It is also the reason this file cannot be copied to '
+        r'another computer: the value is one partition on one drive.'),
+    ...pt('#', r'zswap.enabled=0',
+        r'turns the kernel’s zswap cache off. The file does not give a '
+        r'reason. What the rest of the repo shows is that swap is meant '
+        r'to be zram: README.md says “zram swap”, packages/pacman.txt '
+        r'lists zram-generator, and sysctl.d/99-zram.conf opens with '
+        r'“zram is RAM-backed compressed swap”. My reading is that two '
+        r'compressed layers in front of the same swap would be redundant, '
+        r'but that motive is an inference, not something written down.'),
+    ...pt('#', r'rootflags=subvol=@',
+        r'mount options for the root filesystem. The root is a btrfs '
+        r'subvolume named @. README.md lists “btrfs with snapper” in its '
+        r'setup table, which fits a layout with named subvolumes, but the '
+        r'repo does not track the snapper configuration.'),
+    ...pt('#', r'rw',
+        r'mount the root read-write from the start instead of waiting for '
+        r'a remount.'),
+    ...pt('#', r'rootfstype=btrfs',
+        r'tell the kernel the root filesystem type up front, so it does '
+        r'not have to probe for it.'),
 
-    ...sec('rootflags=subvol=@, rootfstype=btrfs, rw'),
-    ...para(
-        '#',
-        r'These three describe how to mount the root once it is '
-        r'found, and they read as a single sentence: mount it as '
-        r'btrfs, mount the subvolume named @ rather than the top of '
-        r'the filesystem, mount it read-write.'),
-    blank,
-    ...pt(
-        '#',
-        'rootfstype=btrfs',
-        r'the filesystem type is declared, so the early boot does '
-        r'not have to probe for it. The README table says “btrfs '
-        r'with snapper”, and packages/pacman.txt lists btrfs-progs '
-        r'and snapper, which agree.'),
-    ...pt(
-        '#',
-        'rootflags=subvol=@',
-        r'a btrfs filesystem can hold many subvolumes, each a '
-        r'separately snapshot-able tree. The name @ for the root '
-        r'subvolume is the widespread convention for layouts that '
-        r'use snapshots. The repo shows only this one name. It does '
-        r'not say what the other subvolumes are (a home subvolume '
-        r'is common) or whether any exist, and no snapper '
-        r'configuration is tracked.'),
-    ...pt(
-        '#',
-        'rw',
-        r'mount read-write from the start. Linux defaults to '
-        r'mounting root read-only at first, so that it can be '
-        r'checked before it is written, and many setups say ro here '
-        r'and remount later. For btrfs there is no boot-time '
-        r'check to wait for, which is a reasonable argument for rw. '
-        r'The mkinitcpio hook list still has fsck; for a btrfs '
-        r'root I understand it to do nothing.'),
-    blank,
-    ...para(
-        '#',
-        r'The pairing of subvolume and snapper gives a design '
-        r'implication worth saying out loud, as inference. The '
-        r'kernel and the UKIs live in /boot, which per linux.preset '
-        r'is the EFI system partition, a FAT filesystem outside the '
-        r'btrfs. Rolling back the @ subvolume to an older snapshot '
-        r'would roll back /usr/lib/modules and the packages, but not '
-        r'the UKI sitting on the ESP. The repo does not address '
-        r'that, and it tracks no snapshot-on-upgrade hook (there is '
-        r'no snap-pac in packages/pacman.txt).'),
+    ...sec(r'what is not on the line'),
+    ...para('#',
+        r'The absences are as informative as the parameters. There is no '
+        r'quiet and no splash, so the kernel messages are not hidden. '
+        r'There is no nvidia_drm.modeset option, even though this is an '
+        r'NVIDIA machine; a search of the whole repository for modeset '
+        r'finds nothing, so the repo does not show where, or whether, that '
+        r'is set. The NVIDIA modules are instead pulled into the '
+        r'initramfs by mkinitcpio.conf. And there is no resume= parameter, '
+        r'which is consistent with swap being RAM-backed zram that cannot '
+        r'hold a hibernation image, though nothing in the repo says '
+        r'hibernation was ruled out on purpose.'),
 
-    ...sec('zswap.enabled=0: one compressed swap, not two'),
-    ...para(
-        '#',
-        r'This is the only parameter that is not about the root. '
-        r'zswap is a kernel feature that compresses pages in RAM '
-        r'on their way to a swap device. The system also uses zram, '
-        r'which is itself compressed swap kept in RAM, tuned by '
-        r'etc/sysctl.d/99-zram.conf and installed through the '
-        r'zram-generator package. Running both would compress '
-        r'pages twice and route them through two layers for no '
-        r'benefit. Switching zswap off leaves zram as the single '
-        r'layer. The repo does not state this reasoning; I take it '
-        r'from the pairing, and the pacman.txt page reads it the '
+    ...sec(r'one line for two images'),
+    ...para('#',
+        r'linux.preset builds two images, a default UKI and a fallback '
+        r'UKI. Neither preset section sets its own command line, so as far '
+        r'as the repo shows both get this same line. That is a quiet '
+        r'trade-off. The fallback image exists to rescue a bad initramfs, '
+        r'and it does, but it cannot rescue a bad command line, because it '
+        r'inherits it. If the PARTUUID is wrong, both entries fail the '
         r'same way.'),
     blank,
-    ...para(
-        '#',
-        r'A caution that the same pairing raises. The setting '
-        r'only makes sense if the zram device really exists, and the '
-        r'repo does not track the zram-generator configuration '
-        r'that would create it. With zswap off and no zram device, '
-        r'swap would simply be absent.'),
+    ...para('#',
+        r'Recovery from that situation is made harder, on purpose, by '
+        r'loader.conf. Its editor setting is off, with a comment that '
+        r'explains why: otherwise anyone at the keyboard could press e at '
+        r'the menu and append init=/bin/bash. So the menu cannot be used '
+        r'to repair a wrong line. The way back is a rescue USB, or booting '
+        r'an entry from the firmware. The installer’s decision not to '
+        r'copy this file automatically is the matching safety: a command '
+        r'line written for another machine is the one mistake that can '
+        r'leave no bootable entry at all.'),
 
-    ...sec('what is not on the line'),
-    ...para(
-        '#',
-        r'Reading a short command line tells as much by omission. '
-        r'These are the common parameters it does not contain. Each '
-        r'item is an observation about the file, with a note on what '
-        r'it may mean.'),
+    ...sec(r'failure modes'),
+    ...pt('#', r'wrong PARTUUID',
+        r'the kernel cannot find the root. Both UKIs fail; the editor is '
+        r'disabled; use a rescue medium.'),
+    ...pt('#', r'edit without a rebuild',
+        r'the file is only read when the image is built. Changing it and '
+        r'rebooting changes nothing until sudo mkinitcpio -P is run.'),
+    ...pt('#', r'subvolume renamed',
+        r'rootflags=subvol=@ points at a subvolume by name; if the name '
+        r'changes (for example after a restore), the mount fails.'),
+    ...pt('#', r'copied to another machine',
+        r'the PARTUUID is the one value that must be replaced first.'),
+
+    ...sec(r'how I checked it'),
+    ...para('#',
+        r'The repo has no tests for system files. What I did was compare: '
+        r'on the machine this repo describes, /proc/cmdline holds exactly '
+        r'this string, parameter for parameter, and /etc/kernel/cmdline '
+        r'is byte-identical to the tracked file. That confirms the file '
+        r'matches what is booted. It does not prove the file is what '
+        r'caused it, since I did not rebuild an image.'),
+
+    ...sec(r'history'),
+    ...pt('#', r'd552dfd, 2026-09-19',
+        r'the initial commit added the file, as part of the boot '
+        r'configuration alongside mkinitcpio.conf and loader.conf. It has '
+        r'not been changed in any later commit, across all 22.'),
     blank,
-    ...pt(
-        '#',
-        'quiet, splash, loglevel',
-        r'none, so the kernel prints its boot messages. The repo '
-        r'gives no reason either way.'),
-    ...pt(
-        '#',
-        'nvidia_drm.modeset=1',
-        r'absent. The NVIDIA modules are loaded early through '
-        r'mkinitcpio.conf, and Wayland compositors on the '
-        r'proprietary driver need kernel modesetting. It may be '
-        r'enabled by a modprobe option from the driver package '
-        r'instead of the command line. I cannot tell which from '
-        r'the repo, and I flag it as a gap.'),
-    ...pt(
-        '#',
-        'amd_pstate',
-        r'absent. gamemode.ini says the CPU runs in amd-pstate '
-        r'active mode and switches governors, yet nothing on this '
-        r'line selects that mode. It is either the kernel’s '
-        r'default for this CPU or set elsewhere.'),
-    ...pt(
-        '#',
-        'resume=',
-        r'absent, so there is no hibernation; swap is zram, which '
-        r'cannot hold a hibernation image across a power cycle.'),
-    ...pt(
-        '#',
-        'mitigations, nowatchdog, tuning flags',
-        r'absent. The performance work in this repo is in sysctl '
-        r'and the scheduler, not in boot flags.'),
-
-    ...sec('history'),
-    ...para(
-        '#',
-        r'git log has one commit for this path, d552dfd, on '
-        r'2026-09-19 at 18:28, the initial commit. Its body lists '
-        r'“the boot configuration” as part of the system side. There '
-        r'is no later edit, so the line has survived the whole '
-        r'history unchanged, which is the expected behaviour for a '
-        r'file that points at a partition: it changes when the '
-        r'disk layout does.'),
-
-    ...sec('how I would verify it, and what I could not'),
-    ...para(
-        '#',
-        r'On the machine, three observations settle everything on '
-        r'this page: the contents of /proc/cmdline after boot (it '
-        r'should match this file), findmnt / (it should show btrfs '
-        r'with subvol=/@), and swapon --show (zram only, no zswap '
-        r'file). I did not run them. What I did check is the '
-        r'file’s shape: it is one line of five parameters, with a '
-        r'trailing newline and no stray characters.'),
-
-    ...sec('limits, and what is next'),
-    ...pt(
-        '#',
-        'unportable by design',
-        r'the PARTUUID is machine-specific, which is why the '
-        r'installer never touches the file. A script could '
-        r'generate the line from findmnt output instead, which '
-        r'would make the file reproducible too.'),
-    ...pt(
-        '#',
-        'no recovery path',
-        r'both UKIs share this line, and the editor is off. A '
-        r'typo here is repaired from a live USB.'),
-    ...pt(
-        '#',
-        'zram half-tracked',
-        r'zswap is switched off here, yet the zram device it '
-        r'relies on is not defined in the repo.'),
-    blank,
-    link('→ github.com/xynorash/xyno-arch',
-        'https://github.com/xynorash/xyno-arch'),
+    ...sec(r'related files'),
+    ...pt('#', r'system/etc/mkinitcpio.d/linux.preset',
+        r'where the UKI is built and where it lands.'),
+    ...pt('#', r'system/etc/mkinitcpio.conf',
+        r'what goes into the initramfs half of the image.'),
+    ...pt('#', r'system/boot/loader/loader.conf',
+        r'which image boots by default and why the menu cannot edit this '
+        r'line.'),
+    ...pt('#', r'system/etc/sysctl.d/99-zram.conf',
+        r'the swap this line steps aside for.'),
   ],
 );

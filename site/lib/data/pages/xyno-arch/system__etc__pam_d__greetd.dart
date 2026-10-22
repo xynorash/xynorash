@@ -5,48 +5,40 @@ final Buffer page = makePage(
   'xyno-arch/system/etc/pam.d/greetd',
   lines: [
     cm('#', '──────────────────────────────────────────'),
-    cm('#', 'greetd — the login stack that unlocks the keyring'),
-    cm('#', 'two optional lines added to a stock PAM service'),
+    cm('#', r'greetd (PAM) — who may log in, and what unlocks on the way'),
+    cm('#', r'nine lines between a typed password and a running desktop'),
     cm('#', '──────────────────────────────────────────'),
     blank,
-    kv('role', 'PAM service used when someone logs in through greetd'),
-    kv('language', 'PAM configuration: type, control, module, arguments'),
-    kv('size', '9 lines, 7 active; 1 commit: 208de62 (2026-09-19 18:34)'),
-    kv('the addition', 'pam_gnome_keyring.so twice: once in auth, once in session'),
-    kv('installed by', 'nobody: printed as “adds gnome-keyring unlock at login”'),
+    kv(r'role', r'PAM stack for the greetd login service'),
+    kv(r'format', r'PAM: type, control, module, in order'),
+    kv(r'size', r'9 lines, 7 of them active'),
+    kv(r'installed', r'never automatically; install.sh --system only prints it'),
+    kv(r'history', r'1 commit: 208de62 (2026-09-19)'),
+    kv(r'drift', r'the copy installed on the machine differs from this one'),
 
-    ...sec('why this file exists'),
-    ...para(
-        '#',
-        r'Logging in on a Linux desktop does two jobs that look like '
-        r'one. It proves who you are, and it hands the session '
-        r'a secret: your password, typed once. Programs that keep '
-        r'tokens, Wi-Fi keys or browser logins need a place to '
-        r'store them, the secret service, and a place to store '
-        r'secrets must itself be unlocked with something. If the '
-        r'login password unlocks it, nobody sees a second prompt. '
-        r'That is the entire purpose of this file: a PAM stack for '
-        r'greetd that passes the password to gnome-keyring at the '
-        r'moment of login.'),
+    ...sec(r'why this file exists'),
+    ...para('#',
+        r'When tuigreet hands greetd a password, greetd does not check '
+        r'it. It asks PAM, using a service named after the program: '
+        r'greetd. PAM looks for /etc/pam.d/greetd and runs the lines in '
+        r'it. This file is that stack. The repo tracks it for one '
+        r'reason, which the installer’s printed list gives: “adds '
+        r'gnome-keyring unlock at login”. The commit that added it says '
+        r'the same thing from the other side: it adds “the greetd PAM '
+        r'stack”.'),
     blank,
-    ...para(
-        '#',
-        r'The repo supports the point from two sides. The package '
-        r'list installs gnome-keyring, and the xdg-desktop-portal '
-        r'configuration names it as the provider of the Secret '
-        r'interface:'),
-    ...code('ini', 'home/.config/xdg-desktop-portal/hyprland-portals.conf · the secret provider', r'''
-org.freedesktop.impl.portal.Secret=gnome-keyring;'''),
-    ...para(
-        '#',
-        r'Applications that ask the portal for a secret reach '
-        r'gnome-keyring. Without the PAM lines the keyring would '
-        r'start locked and ask for its own password the first '
-        r'time something needed it. With them, it is unlocked by '
-        r'the login and the question never appears.'),
+    ...para('#',
+        r'The reason it matters is the keyring. Applications on a Linux '
+        r'desktop store secrets (browser logins, tokens) in the '
+        r'gnome-keyring daemon, and the daemon needs a password to '
+        r'unlock. If it is unlocked with the login password at '
+        r'login, the user is never asked a second time. PAM is where '
+        r'that handoff has to happen, because it is the only place that '
+        r'sees the typed password. packages/pacman.txt lists '
+        r'gnome-keyring alongside greetd and greetd-tuigreet.'),
 
-    ...sec('the file, in full'),
-    ...code('text', 'system/etc/pam.d/greetd', r'''
+    ...sec(r'the stack, line by line'),
+    ...code('text', r'system/etc/pam.d/greetd · lines 1-9', r'''
 #%PAM-1.0
 
 auth       required     pam_securetty.so
@@ -56,164 +48,100 @@ auth       optional     pam_gnome_keyring.so
 account    include      system-local-login
 session    include      system-local-login
 session    optional     pam_gnome_keyring.so auto_start'''),
-    ...para(
-        '#',
-        r'PAM configuration is read as a table. Each line has a '
-        r'type (which question is being asked), a control flag '
-        r'(what a failure means), a module and optional '
-        r'arguments. The file name is the PAM service name, which '
-        r'is how greetd finds this file: as I understand greetd, it '
-        r'authenticates the person typing in the greeter through '
-        r'a service called greetd.'),
-
-    ...sec('what is stock and what was added'),
-    ...para(
-        '#',
-        r'Seven of the nine lines (the header, the blank line and '
-        r'five rules) are, as far as I can tell, the stack that '
-        r'the greetd package installs: a securetty check, a '
-        r'nologin check, and three lines that hand the real work '
-        r'to the system-local-login service. I am '
-        r'recalling that stock file from the Arch package and '
-        r'could not diff it. The two lines that are Nash’s are '
-        r'the pam_gnome_keyring.so lines, and the installer’s hint '
-        r'says exactly that: “adds gnome-keyring unlock at login”. '
-        r'They follow the pattern in the Arch documentation for '
-        r'gnome-keyring, one line at the end of the auth '
-        r'section and one with auto_start at the end of the '
-        r'session section.'),
+    ...para('#',
+        r'PAM groups its checks by purpose: auth proves who you are, '
+        r'account decides whether you may log in now, session sets '
+        r'up and tears down the login. The control word says what '
+        r'a failure means: required fails the stack at the end, '
+        r'requisite fails at once, optional never decides the '
+        r'result, and include pulls in another file.'),
     blank,
-    ...pt(
-        '#',
-        'auth required pam_securetty.so',
-        r'restricts root logins to terminals listed in a file. For '
-        r'ordinary users it does not get in the way.'),
-    ...pt(
-        '#',
-        'auth requisite pam_nologin.so',
-        r'refuses logins while /etc/nologin exists. requisite '
-        r'means the stack stops at once on failure instead of '
-        r'continuing.'),
-    ...pt(
-        '#',
-        'auth include system-local-login',
-        r'pull in another file: the distribution’s login rules, '
-        r'where the password is actually checked. Every line with '
-        r'include, in all three sections, defers to the same file.'),
-    ...pt(
-        '#',
-        'auth optional pam_gnome_keyring.so',
-        r'the first addition. In the auth stage it takes the '
-        r'password that was just typed and remembers it for the '
-        r'session stage. It sits after the include, so it runs '
-        r'only once the real check has passed.'),
-    ...pt(
-        '#',
-        'session optional pam_gnome_keyring.so auto_start',
-        r'the second addition. When the session opens, it starts '
-        r'the keyring daemon if it is not running and unlocks the '
-        r'login keyring with the remembered password. auto_start is '
-        r'the argument that makes it launch the daemon.'),
+    ...pt('#', r'auth required pam_securetty.so',
+        r'a classic check that root may only log in on a trusted '
+        r'terminal. I did not test its behaviour for an ordinary '
+        r'user. It exists on this system (pam_securetty.so is in the '
+        r'PAM module directory).'),
+    ...pt('#', r'auth requisite pam_nologin.so',
+        r'if /etc/nologin exists, ordinary users are refused at once.'),
+    ...pt('#', r'auth include system-local-login',
+        r'the real password check. system-local-login is Arch’s '
+        r'stack for local logins, which in turn includes the shared '
+        r'system-auth. On the machine, system-auth also carries '
+        r'pam_limits in its session section, so the rtprio and memlock '
+        r'limits from 99-realtime-audio.conf apply to a session that '
+        r'comes through this file as well.'),
+    ...pt('#', r'auth optional pam_gnome_keyring.so',
+        r'receives the password that the line above verified and '
+        r'keeps it so the module can unlock the keyring later. Optional '
+        r'means that if the module is missing or fails, login still '
+        r'succeeds.'),
+    ...pt('#', r'account include system-local-login',
+        r'account checks come from the shared stack.'),
+    ...pt('#', r'session include system-local-login',
+        r'session setup comes from the shared stack.'),
+    ...pt('#', r'session optional pam_gnome_keyring.so auto_start',
+        r'at session start the module starts the keyring daemon and '
+        r'unlocks it with the password it kept. Again optional.'),
 
-    ...sec('why optional, and why those positions'),
-    ...para(
-        '#',
-        r'The control flag is the safety of the whole design. PAM '
-        r'optional means a module’s result only matters if it is '
-        r'the only module of its type. Here it is not, so if '
-        r'gnome-keyring is missing, crashes, or cannot unlock the '
-        r'keyring, login still succeeds. A secrets problem is '
-        r'allowed to degrade to “you will be asked for a password '
-        r'later”, never to “you cannot log in”. That is the right '
-        r'ranking for a convenience feature bolted onto the one '
-        r'service that gates the whole desktop.'),
+    ...sec(r'design decisions'),
+    ...pt('#', r'optional, twice',
+        r'the keyring is a convenience. A broken keyring must never '
+        r'block a login, and optional makes sure of it.'),
+    ...pt('#', r'include, not copy',
+        r'the file adds only the keyring on top of the distribution’s '
+        r'local login stack, so password policy stays where Arch '
+        r'maintains it.'),
+    ...pt('#', r'not installed for you',
+        r'a wrong PAM file can lock every user out of the machine, '
+        r'including the one who is trying to fix it. So the installer '
+        r'prints it with the others that replace system-owned files '
+        r'and expects a manual comparison.'),
+
+    ...sec(r'where the repo and the machine disagree'),
+    ...para('#',
+        r'Checking the live /etc/pam.d/greetd against the tracked copy '
+        r'shows they are not the same. It is the only mismatch among the '
+        r'system files I could compare (loader.conf is not present on '
+        r'the machine I checked, so that one I could not). The live file has the '
+        r'same lines plus two guards, in front of each keyring line: '
+        r'pam_succeed_if.so quiet user = greeter, with a comment above '
+        r'the first, “skip the keyring module for the greeter user '
+        r'(HOME=/, cannot create keyrings)”. In other words, the greeter '
+        r'program itself runs as the user greeter, goes through this '
+        r'same service, and the keyring module should not try to '
+        r'make a keyring for that account.'),
     blank,
-    ...para(
-        '#',
-        r'The positions matter too. In the auth section the '
-        r'keyring line comes after the include, because it needs a '
-        r'password that has already been validated. In the session '
-        r'section it comes after the include of the standard '
-        r'session setup, so the user’s environment exists when '
-        r'the daemon starts. Order in a PAM file is order of '
-        r'execution, so swapping those lines would change behaviour.'),
+    ...para('#',
+        r'So the version in git is the earlier one. A fresh install '
+        r'from this repo would get a stack without the guards. I do not '
+        r'know what that does in practice, whether it is a harmless '
+        r'warning in the log or an error; I did not reproduce it. What '
+        r'I can say is that the tracked copy lacks lines the live file '
+        r'has, so a fresh install from the repo would not reproduce '
+        r'this machine.'),
 
-    ...sec('the chain at login'),
-    plain('  tuigreet reads the password          (greetd/config.toml)'),
-    plain('    -> greetd asks PAM, service "greetd"   (this file)'),
-    plain('    -> system-local-login checks it        (stock)'),
-    plain('    -> pam_gnome_keyring keeps the password'),
-    plain('    -> session opens, keyring daemon starts, login keyring unlocks'),
-    plain('    -> start-hyprland runs as the user'),
-    plain('    -> a portal asks for a secret          (hyprland-portals.conf)'),
-    blank,
-    ...para(
-        '#',
-        r'There is a precondition the file cannot enforce. The login '
-        r'keyring can only be unlocked by the login password if the '
-        r'keyring was created with that same password. If the '
-        r'passwords differ, the daemon starts and stays locked, '
-        r'and applications prompt as before. The repo documents '
-        r'no step that sets it up.'),
+    ...sec(r'how it connects to the other files'),
+    ...pt('#', r'system/etc/greetd/config.toml',
+        r'runs tuigreet as user greeter; this file is the PAM service '
+        r'that greetd consults for the name greetd.'),
+    ...pt('#', r'system/etc/security/limits.d/99-realtime-audio.conf',
+        r'applies through pam_limits when the session stack includes it.'),
+    ...pt('#', r'packages/pacman.txt',
+        r'gnome-keyring, greetd and greetd-tuigreet are all listed.'),
 
-    ...sec('why this file is not installed automatically'),
-    ...para(
-        '#',
-        r'The nine system files the installer copies are all drop-ins '
-        r'or standalone files. This one replaces a file that the '
-        r'greetd package owns, and its failure mode, however '
-        r'unlikely with these two optional lines, is the worst of '
-        r'its kind: nobody can log in at the greeter. The installer '
-        r'puts it on the printed list and says to compare by hand. '
-        r'A text console would still allow a repair, but the '
-        r'machine would not reach the desktop in the meantime.'),
-    ...code('bash', 'install.sh · the printed entry', r'''
-  echo "  system/etc/pam.d/greetd        adds gnome-keyring unlock at login"'''),
-    ...para(
-        '#',
-        r'That the greetd configuration file is auto-installed and '
-        r'the PAM one is not shows how the installer ranks '
-        r'consequences. A wrong greeter command leaves a login '
-        r'screen that does not start. A wrong PAM stack can lock '
-        r'every login. The installer’s caution is proportional to '
-        r'the second.'),
+    ...sec(r'how I checked it'),
+    ...para('#',
+        r'There are no tests for PAM here, and I would not run a '
+        r'login test against a real stack in a documentation pass. I '
+        r'read the live file and the two shared stacks it includes, and '
+        r'checked that every module it names exists in the PAM module '
+        r'directory (pam_securetty, pam_nologin, pam_gnome_keyring).'),
 
-    ...sec('history'),
-    ...pt(
-        '#',
-        '208de62, 2026-09-19 18:34',
-        r'the file arrives, six minutes after the initial commit '
-        r'(the first commit has the greetd configuration, but not '
-        r'its PAM side). The commit message names it: “the greetd '
-        r'PAM stack”, in a list of things added so the desktop '
-        r'reproduces on another machine.'),
-    ...pt(
-        '#',
-        'since',
-        r'unchanged.'),
-
-    ...sec('limits, and what is next'),
-    ...pt(
-        '#',
-        'stock text recalled, not diffed',
-        r'I believe the first seven lines are the package’s. If '
-        r'the package changes its default, this copy would not '
-        r'follow, because it replaces the file rather than layers '
-        r'on it. PAM has no drop-in directory for this; the '
-        r'closest alternative is a small include file.'),
-    ...pt(
-        '#',
-        'password sync is manual',
-        r'see above: the keyring password must match the login '
-        r'password, and nothing here arranges it.'),
-    ...pt(
-        '#',
-        'lock screen is separate',
-        r'the lock screen is a separate component. This file '
-        r'concerns the greeter login only, and the repo says '
-        r'nothing about how the lock screen authenticates.'),
-    blank,
-    link('→ github.com/xynorash/xyno-arch',
-        'https://github.com/xynorash/xyno-arch'),
+    ...sec(r'history'),
+    ...pt('#', r'208de62, 2026-09-19 18:34',
+        r'added six minutes after the initial commit, in the same '
+        r'change that also added the mkinitcpio preset. The first commit '
+        r'already tracked greetd/config.toml, but not the PAM stack that '
+        r'the greeter uses.'),
   ],
 );

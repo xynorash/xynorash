@@ -5,49 +5,73 @@ final Buffer page = makePage(
   'xyno-scholar/lib/widgets/sidebar/scope_tone_mood_card.dart',
   lines: [
     cm('//', '──────────────────────────────────────────'),
-    cm('//', 'scope_tone_mood_card.dart — one card, three different dials'),
-    cm('//', 'scope changes the shape of the answer; tone and mood change its voice'),
+    cm('//', r'scope_tone_mood_card.dart — how many, how formal, how bold'),
+    cm('//', r'three small controls in one card, each one a sentence in the prompt'),
     cm('//', '──────────────────────────────────────────'),
     blank,
-    kv('role', 'sidebar card: Scope (broad or narrow), Tone (3 values), Mood (4 values)'),
-    kv('language', 'Dart / Flutter, ConsumerWidget (no local state)'),
-    kv('size', '88 lines'),
-    kv('history', 'one commit, 7a200e7 (2026-08-06 09:41 UTC); unchanged since'),
-    kv('controls', 'SegmentedButton<Scope> and two ChoiceChip groups'),
-    kv('writes', 'setScope, setTone, setMood on the preference controller'),
-    ...sec('why three controls share a card'),
+    kv(r'role', r'set scope, tone and mood in the preference block'),
+    kv(r'language', r'Dart / Flutter, a stateless ConsumerWidget'),
+    kv(r'size', r'88 lines, 1 commit, never edited'),
+    kv(r'controls', r'Scope: 2 segments · Tone: 3 chips · Mood: 4 chips'),
+    kv(r'defaults', r'broad, neutral, curious (PreferenceBlock.initial())'),
+    kv(r'history', r'7a200e7 (2026-08-06 09:41)'),
+
+    ...sec(r'why this file exists'),
     ...para('//',
-        'The three enums behind this card look alike, short lists '
-        'with a label in each language, but they do very different '
-        'jobs, and the page is easier to read once that is clear.'),
-    ...pt('//', 'Scope',
-        'chooses what kind of answer comes back: five to eight broad '
-        'topic options, or one deep-dive topic with a problématique, '
-        'a bibliography and an outline.'),
-    ...pt('//', 'Tone',
-        'playful, serious or neutral: how the prose sounds.'),
-    ...pt('//', 'Mood',
-        'curious, provocative, reverent or irreverent: the stance '
-        'the topics take toward their subject.'),
+        r'The fields decide what a topic is about. These three controls '
+        r'decide how it is delivered. Scope chooses between a menu and '
+        r'a deep dive. Tone and mood colour the writing. They belong '
+        r'in one card because they are the cheap, reversible choices: '
+        r'a user flips them often, to see what changes, while the '
+        r'fields and the level stay put. The card’s title is only '
+        r'“Scope” (Portée), and the other two controls have '
+        r'their own small headings inside it.'),
+
+    ...sec(r'what each setting does downstream'),
+    ...code('dart', r'lib/services/mistral_client.dart · lines 104-105', r'''
+- If scope is "broad": populate "broadTopics" with 5 to 8 entries, leave "narrowTopic" null.
+- If scope is "narrow": populate "narrowTopic" with exactly 3 entries in "starterBibliography" and exactly 3 entries (I, II, III) in "suggestedStructure", leave "broadTopics" an empty array.'''),
+    ...code('dart', r'lib/services/mistral_client.dart · lines 56-57', r'''
+   - tone playful = light, witty phrasing; tone serious = measured, formal academic phrasing; tone neutral = plain, matter-of-fact phrasing.
+   - mood curious = exploratory, open questions; mood provocative = challenges assumptions, bold framing; mood reverent = respectful, careful of sensitive subject matter; mood irreverent = unconventional, willing to poke at orthodoxy.'''),
+    ...para('//',
+        r'The three controls are not decoration. Each value is turned '
+        r'into a word and put in the system prompt, which defines '
+        r'it. Scope changes the shape of the whole answer: broad gives '
+        r'five to eight topic options for the user to pick from, narrow '
+        r'gives one fully developed topic with the three tabs the '
+        r'previous pages cover. In the user turn the scope also picks '
+        r'the instruction text: “Generate ONE narrow, deep-dive '
+        r'topic” or “Generate 5 to 8 broad topic options”. Tone and '
+        r'mood are adjectives for the prose, with one sentence each in '
+        r'the prompt saying what they mean. The labels on screen are '
+        r'the same words, in French and English.'),
     blank,
     ...para('//',
-        'The file groups them because each is a small closed choice '
-        'with no explanation needed beyond its label, which makes '
-        'them cheap to stack. The card’s heading, though, is only '
-        '“Scope” / “Portée” (strings.dart: scopeTitle). Tone and '
-        'mood get their own small sub-labels, “Tone” and “Mood”, '
-        'but scope has none because it borrows the card’s title. '
-        'The class name, ScopeToneMoodCard, is the honest one; the '
-        'screen label under-describes what is inside.'),
+        r'A look at the two axes. Tone is about register: playful, '
+        r'serious, neutral. Mood is about stance: curious, '
+        r'provocative, reverent, irreverent. Reverent and irreverent '
+        r'are a matched pair, one careful of sensitive subject '
+        r'matter and the other willing to poke at orthodoxy, and the '
+        r'pair fits a project whose default fields include '
+        r'theology. The file itself does not comment on that; it is '
+        r'my reading of the choice of words.'),
 
-    ...sec('scope: the dial that rewrites the response'),
-    ...code('dart', 'lib/widgets/sidebar/scope_tone_mood_card.dart · the scope control (trimmed)', r'''
+    ...sec(r'the scope control'),
+    ...code('dart', r'lib/widgets/sidebar/scope_tone_mood_card.dart · lines 24-47', r'''
           SegmentedButton<Scope>(
             segments: Scope.values
                 .map(
                   (scope) => ButtonSegment(
-                    value: scope,'''),
-    ...code('dart', 'lib/widgets/sidebar/scope_tone_mood_card.dart · selection and tint', r'''
+                    value: scope,
+                    label: Text(
+                      prefs.language == 'fr'
+                          ? scope.labelFr()
+                          : scope.labelEn(),
+                    ),
+                  ),
+                )
+                .toList(),
             selected: {prefs.scope},
             onSelectionChanged: (selection) =>
                 notifier.setScope(selection.first),
@@ -57,69 +81,33 @@ final Buffer page = makePage(
                     ? colors.teal.withValues(alpha: 0.16)
                     : null,
               ),
-            ),'''),
+            ),
+          ),'''),
     ...para('//',
-        'A SegmentedButton is Material’s control for a small '
-        'mutually exclusive set, and two options is its natural '
-        'size. Its selected value is a Set, hence the braces around '
-        'prefs.scope and the .first on the way back. The style '
-        'override is worth reading closely. It returns a teal tint '
-        'only for the selected state and null otherwise, and null '
-        'means “use the theme’s default for this state”, so the '
-        'unselected segments are left alone. The language toggle in '
-        'the app bar (home_screen.dart) uses the same recipe, down '
-        'to the 0.16 alpha, so the two segmented controls look like '
-        'one family.'),
-    ...code('dart', 'lib/models/enums.dart · scope labels', r'''
-    Scope.broad => 'Broad (5–8 options)',
-    Scope.narrow => 'Narrow (deep dive)','''),
-    ...para('//',
-        'The labels carry facts. “5–8 options” is the number the '
-        'system prompt asks for in broad mode (“5 to 8 entries”), '
-        'so the user learns the '
-        'size of the answer from the control itself, in French '
-        'too: “Large (5–8 pistes)” and “Ciblé (approfondissement)”. '
-        'The numbers are written in two places, the label and the '
-        'prompt, and nothing ties them together.'),
-    ...para('//',
-        'How scope turns into a request is spread over two '
-        'files, and seeing both is what makes this card matter.'),
-    ...code('dart', 'lib/services/mistral_client.dart · the instruction that depends on scope (trimmed)', r'''
-      'instruction': prefs.scope.apiValue == 'narrow'
-      ...'''),
-    ...para('//',
-        'The user turn carries an instruction chosen by that test: '
-        '“Generate ONE narrow, deep-dive topic (scope="narrow")” '
-        'for narrow, “Generate 5 to 8 broad topic options '
-        '(scope="broad")” otherwise, each followed by “following '
-        'the rules and schema exactly”. It tells the model which '
-        'shape to return, and '
-        'the response then carries its own scope field. '
-        'OutputPanel shows NarrowTopicView with four tabs when the '
-        'response says narrow and has a narrowTopic, and '
-        'BroadTopicsList when broad topics came back. So this one segmented control '
-        'decides which of two very different screens the user will '
-        'see next, and it is the only choice in the sidebar that '
-        'does.'),
-    ...para('//',
-        'There is a consequence in the deep-dive flow that I only '
-        'know from reading the code. The Deep Dive button on a '
-        'broad topic calls deepDive in generation_provider.dart, '
-        'which passes prefs.copyWith() with no arguments, so the '
-        'scope stays whatever the sidebar says. If the sidebar is '
-        'still on Broad, the instruction above still asks for five '
-        'to eight broad options, together with the chosen topic’s '
-        'title as deepDiveOnTitle. Whether the model then returns '
-        'one narrow topic or a fresh broad list is up to how it '
-        'weighs those two signals; the code does not force it. '
-        'prefs.copyWith(scope: Scope.narrow) is the obvious change '
-        'if a forced deep dive is wanted. I have not run this '
-        'against the model, so I flag it as a likely rough edge, '
-        'not a confirmed bug. The broad_topics_list page lists the '
-        'same concern from the button’s side.'),
+        r'Scope is exactly two states, so it gets a SegmentedButton, a '
+        r'single control with the two options side by side. The '
+        r'segments come from Scope.values, and the labels carry the '
+        r'consequence, not just the name: “Broad (5–8 options)” and '
+        r'“Narrow (deep dive)”, in French “Large (5–8 pistes)” and '
+        r'“Ciblé (approfondissement)”. A user learns what the setting '
+        r'does before pressing the generate button. The selected set '
+        r'is a one-element set, {prefs.scope}: SegmentedButton is '
+        r'built to allow multi-select, and the widget is used as '
+        r'single-select, so on a change the code takes selection.first. '
+        r'The style callback paints the selected segment in the same '
+        r'teal tint as the other cards, and returns null for the '
+        r'rest to keep the theme’s colour.'),
 
-    ...sec('tone and mood: two dials with a prompt behind them'),
-    ...code('dart', 'lib/widgets/sidebar/scope_tone_mood_card.dart · tone chips (trimmed)', r'''
+    ...sec(r'the tone and mood chips'),
+    ...code('dart', r'lib/widgets/sidebar/scope_tone_mood_card.dart · lines 48-65', r'''
+          const SizedBox(height: 18),
+          Text(s.toneTitle, style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: Tone.values.map((tone) {
+              final selected = prefs.tone == tone;
               return ChoiceChip(
                 label: Text(
                   prefs.language == 'fr' ? tone.labelFr() : tone.labelEn(),
@@ -127,93 +115,78 @@ final Buffer page = makePage(
                 selected: selected,
                 onSelected: (_) => notifier.setTone(tone),
                 selectedColor: colors.teal.withValues(alpha: 0.16),
-              );'''),
+              );
+            }).toList(),
+          ),'''),
     ...para('//',
-        'Tone and mood use ChoiceChip, Material’s single-select '
-        'chip, in a Wrap with 6 px spacing. The callback ignores the '
-        'boolean that onSelected supplies and always calls the '
-        'setter. That makes the group behave like radio buttons: '
-        'tapping the chosen chip tells the chip it is being '
-        'deselected, but the card replies by selecting the same '
-        'value again, so one value is always active. The '
-        'enums have a default for each (neutral, curious), the '
-        'provider starts there, and the prompt never has to handle '
-        '“no tone”.'),
-    ...para('//',
-        'Rule 4 of the prompt defines every value in a single '
-        'line. For tone it reads “tone playful = light, witty '
-        'phrasing; tone serious = measured, formal academic '
-        'phrasing; tone neutral = plain, matter-of-fact phrasing”, '
-        'and the mood line does the same for curious, '
-        'provocative, reverent and irreverent (the last two '
-        'defined as “respectful, careful of sensitive subject '
-        'matter” and “unconventional, willing to poke at '
-        'orthodoxy”). The user sees none of this. The level card '
-        'prints a description under every option; this card shows '
-        'only one-word chips. For tone, one word is enough. For '
-        'mood, “Révérencieux” and “Irrévérencieux” are close to '
-        'self-explanatory in French, but “Reverent” and “Irreverent” '
-        'do not say that reverent here means “careful of sensitive '
-        'subject matter”. That is an asymmetry in the interface: '
-        'the level, whose labels are the more obvious, gets the '
-        'explanations, and the mood, whose labels are the more '
-        'ambiguous, does not.'),
-    ...para('//',
-        'The combination space is small and enumerable: 2 scopes '
-        'times 3 tones times 4 moods is 24 voice settings, 120 once '
-        'the five levels from the neighbouring card are counted. '
-        'The prompt handles it by defining each value in words '
-        'instead of branching, so there is no code that depends on '
-        'the combination. Nothing records how the model’s output '
-        'actually changes between, say, serious/reverent and '
-        'playful/irreverent; there is no evaluation set in the '
-        'repository.'),
-
-    ...sec('a pattern that repeats three times'),
-    ...para('//',
-        'Each of the three controls follows the same recipe: read '
-        'the value from the block, map the enum’s values to widgets, '
-        'compare each to the selection, call the setter in the '
-        'callback. The labels come through the repeated language '
-        'ternary that level_selector_card.dart also uses. The '
-        'notifier is obtained once at the top of build with '
-        'ref.read(preferenceBlockProvider.notifier), which is the '
-        'right call for something used only in callbacks: it does '
-        'not subscribe the card to the notifier object. The block '
-        'itself is watched, so a change to any preference rebuilds '
-        'this card, which is cheap at this size.'),
-
-    ...sec('what changed over time'),
-    ...para('//',
-        'One commit created the file: 7a200e7, the scaffold on '
-        '2026-08-06 at 09:41 UTC. It has no icons, so the '
-        'lucide_icons_flutter import fix (89a9c12) did not touch it, '
-        'and none of the three provider swaps that followed '
-        '(Cerebras, Gemini, Mistral) needed it to change. The file '
-        'in the repository today is its first version.'),
-
-    ...sec('what is tested'),
-    ...para('//',
-        'Nothing in test/ builds the card or checks the enums’ '
-        'labels. mistral_client_test.dart exercises both scopes at '
-        'the client level, one test with a broad response and one '
-        'with a narrow response, but through the parsing of canned '
-        'JSON, not through the sidebar.'),
-
-    ...sec('limits and what is next'),
-    ...pt('//', 'a heading that says less than the card does',
-        '“Scope” covers tone and mood as well.'),
-    ...pt('//', 'unexplained mood values',
-        'the prompt defines them; the UI does not show the '
-        'definitions, though the level card shows its.'),
-    ...pt('//', 'deep dive may not be narrow',
-        'it inherits the sidebar scope; see above.'),
-    ...pt('//', 'numbers in two places',
-        '“5–8” lives in the label and the prompt.'),
-    ...pt('//', 'no test',
-        'a widget test that taps each chip and asserts the '
-        'provider’s block would pin the radio-like behaviour.'),
+        r'Tone and mood use ChoiceChips, the right widget for “exactly '
+        r'one of these”. The two blocks are the same eight lines '
+        r'with Tone swapped for Mood: lines 66 to 83 repeat the '
+        r'structure for four mood values. That duplication is '
+        r'small and clear, and a helper that took the enum values '
+        r'and the setter would remove it at the price of some '
+        r'generic typing. With two uses it is not worth it yet.'),
     blank,
-    link('→ github.com/XNash/xyno-scholar', 'https://github.com/XNash/xyno-scholar'),
+    ...para('//',
+        r'One thing about ChoiceChip: tapping the selected chip calls '
+        r'onSelected again, and the code sets the same value, so '
+        r'nothing changes. A user cannot unset tone or mood. '
+        r'That fits the data: the preference block always holds a '
+        r'value, and the enums’ fromApiValue methods default to '
+        r'neutral, curious and broad.'),
+
+    ...sec(r'a design detail: reading and watching'),
+    ...code('dart', r'lib/widgets/sidebar/scope_tone_mood_card.dart · lines 13-17', r'''
+  Widget build(BuildContext context, WidgetRef ref) {
+    final prefs = ref.watch(preferenceBlockProvider);
+    final notifier = ref.read(preferenceBlockProvider.notifier);
+    final colors = context.colors;
+    final s = AppStrings(prefs.language);'''),
+    ...para('//',
+        r'The first two lines show the Riverpod idiom clearly. ref.watch '
+        r'on the provider subscribes the widget to the value, so the '
+        r'card rebuilds when anything in the block changes. ref.read '
+        r'on the notifier is a one-off lookup of the object that has '
+        r'the setters. The widget fetches the notifier once at the top '
+        r'and calls it from all three handlers. The other sidebar '
+        r'cards call ref.read each time inside the handler; both work, '
+        r'and this one is shorter when several handlers share a '
+        r'target.'),
+
+    ...sec(r'edge cases'),
+    ...pt('//', r'wide labels',
+        r'“Ciblé (approfondissement)” is a long segment label. The '
+        r'SegmentedButton shares the card width between its '
+        r'segments. In a narrow sidebar I would expect the text to '
+        r'wrap or ellipsize; I did not run it at narrow widths.'),
+    ...pt('//', r'selection after a generation',
+        r'scope is read when you press generate (the user-turn '
+        r'instruction depends on it). Changing it afterwards does not '
+        r'alter a topic already on screen.'),
+    ...pt('//', r'deep dive from a broad result',
+        r'a broad result is only on screen if scope was broad, and the '
+        r'Deep Dive button on a broad topic calls deepDive in the '
+        r'provider. That function passes prefs.copyWith() with no '
+        r'arguments (generation_provider.dart line 87), which is a copy '
+        r'of the same preferences, still broad. _userTurn then picks '
+        r'its instruction from the scope, so, reading the code, the '
+        r'request carries deepDiveOnTitle but is worded “Generate 5 to '
+        r'8 broad topic options”. Whether the model then returns a '
+        r'narrow topic anyway I did not test. Setting scope to narrow '
+        r'in that copy looks like what was meant.'),
+
+    ...sec(r'how it is tested'),
+    ...para('//',
+        r'No test covers the card. The enums are not tested either, '
+        r'so a typo in a label would be found by looking. The '
+        r'prompt text that gives these values meaning is covered in '
+        r'part by the client tests, which feed a response through '
+        r'the parser and not the prompt through a judge.'),
+
+    ...sec(r'history'),
+    ...pt('//', r'7a200e7, 2026-08-06 09:41',
+        r'the scaffold commit. This is the one sidebar card that '
+        r'89a9c12 did not touch, because it imports no icons. It has '
+        r'not been edited since.'),
   ],
 );

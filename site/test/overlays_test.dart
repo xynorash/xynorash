@@ -27,7 +27,7 @@ void main() {
       (tester) async {
     final s = makeState();
     s.openFinder();
-    s.finderType('xynorash');
+    s.finderType('xynorash-pwsh');
     await tester.pumpWidget(host(s, TelescopeOverlay(state: s)));
     expect(find.textContaining('README.md', findRichText: true),
         findsWidgets);
