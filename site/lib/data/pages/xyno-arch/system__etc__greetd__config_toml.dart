@@ -10,7 +10,7 @@ final Buffer page = makePage(
     cm('#', '──────────────────────────────────────────'),
     blank,
     kv('role', 'greetd configuration: which greeter runs on boot and what it launches'),
-    kv('language', 'TOML, 6 lines, one of them 560 characters long'),
+    kv('language', 'TOML, 6 lines; the command string alone is 610 characters'),
     kv('size', '1 commit: d552dfd (2026-09-19), never edited since'),
     kv('installed as', '/etc/greetd/config.toml by install.sh --system (copy, mode 644)'),
     kv('parsed here', 'tomllib reads it; the command splits into 38 shell words'),
@@ -69,13 +69,17 @@ user = "greeter"'''),
     blank,
     ...para('#', r'1. The look: a matrix rain behind the form.'),
     ...code('toml', 'system/etc/greetd/config.toml · background and theme', r'''
-tuigreet --background matrix --matrix-colors '#7dcfff,#7aa2f7,#bb9af7' --matrix-length 6,20
---theme 'border=lightblue;title=lightblue;text=white;time=lightblue;greet=lightmagenta;prompt=lightcyan;input=white;action=darkgray;button=lightmagenta;container=black'
+tuigreet --background matrix --matrix-colors '#7dcfff,#7aa2f7,#bb9af7'
+--matrix-length 6,20
+--theme 'border=lightblue;title=lightblue;text=white;time=lightblue;
+greet=lightmagenta;prompt=lightcyan;input=white;action=darkgray;
+button=lightmagenta;container=black'
 --window-padding 2 --container-padding 2 --prompt-padding 1 --width 60'''),
     ...para(
         '#',
-        r'This excerpt is cut from the single line and shown on '
-        r'three lines for reading; in the file it is one string. The '
+        r'These excerpts are cut from the single line and broken '
+        r'across lines for reading, even inside the quoted theme '
+        r'string; in the file it is one string. The '
         r'rain colours are hex values, and they are the Tokyo Night '
         r'palette used everywhere else in the repo:'),
     ...code('ini', 'home/.config/ghostty/themes/noctalia · the same three colours', r'''
@@ -110,22 +114,24 @@ palette = 6=#7dcfff'''),
     blank,
     ...para('#', r'2. The clock and the greeting.'),
     ...code('toml', 'system/etc/greetd/config.toml · time and greeting', r'''
---time --time-format '%A %d %B  ·  %H:%M' --greeting 'xynogamer' --greet-align center'''),
+--time --time-format '%A %d %B  ·  %H:%M'
+--greeting 'xynogamer' --greet-align center'''),
     ...para(
         '#',
         r'The time format is a strftime pattern: weekday name, '
         r'two-digit day, month name, a middle dot between two '
-        r'spaces on each side, then 24-hour time. On the day I '
-        r'wrote this page it would render as “Thursday 08 October  ·  '
-        r'11:53”. I computed that from the pattern, I did not see it '
-        r'on a screen. The greeting is the string xynogamer, centred. '
+        r'spaces on each side, then 24-hour time. At 11:53 on '
+        r'8 October 2026, a Thursday, it would render as “Thursday '
+        r'08 October · 11:53”. I worked that out from the pattern; I '
+        r'did not see it on a screen. The greeting is the string xynogamer, centred. '
         r'The repo does not say what it names; it reads like the '
         r'machine’s handle, and it matches the tagline of the whole '
         r'project, a desktop tuned for gaming.'),
     blank,
     ...para('#', r'3. What it remembers and who it shows.'),
     ...code('toml', 'system/etc/greetd/config.toml · remembering', r'''
---asterisks --asterisks-char '•' --remember --remember-session --user-menu --user-menu-min-uid 1000'''),
+--asterisks --asterisks-char '•' --remember --remember-session
+--user-menu --user-menu-min-uid 1000'''),
     ...pt(
         '#',
         '--asterisks, --asterisks-char',
@@ -149,7 +155,8 @@ palette = 6=#7dcfff'''),
     blank,
     ...para('#', r'4. Power and the launch.'),
     ...code('toml', 'system/etc/greetd/config.toml · power and launch', r'''
---power-shutdown 'systemctl poweroff' --power-reboot 'systemctl reboot' --cmd start-hyprland"'''),
+--power-shutdown 'systemctl poweroff' --power-reboot 'systemctl reboot'
+--cmd start-hyprland"'''),
     ...para(
         '#',
         r'The two power flags give tuigreet the commands to run '
@@ -221,7 +228,7 @@ palette = 6=#7dcfff'''),
     ...sec('limits, and what is next'),
     ...pt(
         '#',
-        'one 560-character line',
+        'one 610-character string',
         r'TOML offers multi-line strings, and the command would be '
         r'far easier to review split at the flag groups above. The '
         r'cost of the long line is that a diff of any change shows '
