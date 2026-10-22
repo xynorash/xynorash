@@ -354,7 +354,7 @@ def card_panel():
 def ticker():
     W, H = 900, SLICE_H["ticker"]
     op, cl, sdefs = shell("ticker")
-    words = ["RUST", "DART", "FLUTTER", "LUA", "POWERSHELL", "NEOVIM", "ARCH", "HYPRLAND", "SYSTEMD"]
+    words = ["RUST", "DART", "FLUTTER", "LUA", "TERMINAL", "NEOVIM", "ARCH", "HYPRLAND", "SYSTEMD"]
     unit = "  ◆  ".join(words) + "  ◆  "
     tl = 1500
     body = f"""{op}<g><g class="tk"><text x="0" y="27" class="w" textLength="{tl}" lengthAdjust="spacing">{unit}</text><text x="{tl}" y="27" class="w" textLength="{tl}" lengthAdjust="spacing">{unit}</text></g>
@@ -366,7 +366,7 @@ def ticker():
         + '<linearGradient id="fl2"><stop offset="0" stop-color="#0b0820"/><stop offset="1" stop-color="#0b0820" stop-opacity="0"/></linearGradient>'
         + '<linearGradient id="fr2"><stop offset="0" stop-color="#0b0820" stop-opacity="0"/><stop offset="1" stop-color="#0b0820"/></linearGradient>'
     )
-    write("ticker.svg", svg(W, H, body, css, "Rust, Dart, Flutter, Lua, PowerShell, Neovim, Arch, Hyprland", defs))
+    write("ticker.svg", svg(W, H, body, css, "Rust, Dart, Flutter, Lua, Terminal, Neovim, Arch, Hyprland", defs))
 
 
 # --------------------------------------------------------------------------- coordinate radar
@@ -477,7 +477,7 @@ def stack():
     items = [
         ("Rust", "systems", "#f0a56a", "rust"),
         ("Dart/Flutter", "UI · this site", "#4fd1e0", "dart"),
-        ("PowerShell+Lua", "where I live", "#9bd77a", "ps"),
+        ("Terminal", "where I live", "#9bd77a", "ps"),
         ("Neovim", "the cockpit", "#7ad66a", "nvim"),
         ("Arch/Hyprland", "the desktop", "#6ab4f0", "arch"),
     ]
@@ -499,7 +499,7 @@ def stack():
         for i, (_, _, c, _) in enumerate(items)
     )
     css = f".k{{font:700 13px {FONT};fill:#fff}}.d{{font:400 10.5px {FONT};fill:#9d8fd6}}"
-    write("stack.svg", svg(W, H, body, css, "Stack: Rust, Dart/Flutter, PowerShell and Lua, Neovim, Arch and Hyprland", defs))
+    write("stack.svg", svg(W, H, body, css, "Stack: Rust, Dart/Flutter, Terminal, Neovim, Arch and Hyprland", defs))
 
 
 # --------------------------------------------------------------------------- projects (terminal)
@@ -636,7 +636,7 @@ def emit():
     rows = [
         img("hero.svg", "Every system has an edge. I like to stand on it, curious, and see what's past it.", full, SITE),
         img("logo.svg", "Xynorash", "62.2%", SITE) + img("devcard.svg", "Nash Tefison's daily.dev card", "37.7%", "https://daily.dev/xynorash"),
-        img("ticker.svg", "Rust · Dart · Flutter · Lua · PowerShell · Neovim · Arch · Hyprland", full),
+        img("ticker.svg", "Rust · Dart · Flutter · Lua · Terminal · Neovim · Arch · Hyprland", full),
         img("gA.svg", "", full),
         img("coordinate.svg", "Xynorash isn\u2019t a name \u2014 it\u2019s a coordinate.", full),
         img("gB.svg", "", full),
@@ -644,7 +644,7 @@ def emit():
         img("about.svg", "principles.md — spec first, measure before believing, document what was verified, fail closed", full),
         img("gC.svg", "", full),
         img("s-h2.svg", "02 · Footing — what I stand on", full),
-        img("stack.svg", "Rust, Dart/Flutter, PowerShell + Lua, Neovim, Arch + Hyprland", full),
+        img("stack.svg", "Rust, Dart/Flutter, Terminal, Neovim, Arch + Hyprland", full),
         img("gD.svg", "", full),
         img("s-h3.svg", "03 · Past it — what I found out there", full),
         img("projects.svg", "heaplens, xynovim, xyno-scholar, xynorash-pwsh, xyno-arch", full, SITE),
