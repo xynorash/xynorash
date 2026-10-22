@@ -4,9 +4,7 @@
 
 <br />
 
-<a href="https://xynorash.github.io/xynorash/"><img src="xynorash_logo.png" alt="Xynorash" width="120" /></a>
-&nbsp;&nbsp;&nbsp;
-<a href="https://daily.dev/xynorash"><img src="https://api.daily.dev/devcards/v2/ujWPdmiVVp2MF1Mf4u33v.png?type=default&r=zj3" alt="Nash Tefison's Dev Card" width="330" /></a>
+<a href="https://xynorash.github.io/xynorash/"><img src="assets/logo.svg" alt="Xynorash" width="545" /></a><a href="https://daily.dev/xynorash"><img src="assets/devcard.svg" alt="Nash Tefison's daily.dev card" width="321" /></a>
 
 <br /><br />
 
@@ -22,7 +20,7 @@
 
 <img src="assets/s-stack.svg" alt="02 · Footing — what I stand on" width="900" />
 
-<img src="assets/stack.svg" alt="Rust, TypeScript, Dart/Flutter, PowerShell + Lua, Neovim, Arch + Hyprland" width="900" />
+<img src="assets/stack.svg" alt="Rust, Dart/Flutter, PowerShell + Lua, Neovim, Arch + Hyprland" width="900" />
 
 <br />
 
