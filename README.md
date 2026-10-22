@@ -1,39 +1,48 @@
 <div align="center">
 
-  <!-- Side by Side Row -->
-  <p>
-    <a href="https://xynorash.github.io/xynorash/"><img src="https://github.com/Xynorash/XNash/blob/main/xynorash_logo.png?raw=true" alt="Xynorash Logo" width="160" align="center" style="display: inline-block; vertical-align: middle;" /></a>
-    &nbsp;&nbsp;&nbsp;&nbsp;
-    <a href="https://daily.dev/xynorash" target="_blank" rel="noopener noreferrer"><img src="https://api.daily.dev/devcards/v2/ujWPdmiVVp2MF1Mf4u33v.png?type=default&r=zj3" width="350" alt="Nash Tefison's Dev Card" align="center" style="display: inline-block; vertical-align: middle;" /></a>
-  </p>
+<a href="https://xynorash.github.io/xynorash/"><img src="assets/hero.svg" alt="Every system has an edge. I like to stand on it, curious, and see what's past it." width="900" /></a>
 
-  <br />
+<br />
 
-  <!-- Animated hero: the motto -->
-  <a href="https://xynorash.github.io/xynorash/">
-    <img src="assets/hero.svg" alt="Every system has an edge. I like to stand on it, curious, and see what's past it." width="900" />
-  </a>
+<a href="https://xynorash.github.io/xynorash/"><img src="xynorash_logo.png" alt="Xynorash" width="120" /></a>
+&nbsp;&nbsp;&nbsp;
+<a href="https://daily.dev/xynorash"><img src="https://api.daily.dev/devcards/v2/ujWPdmiVVp2MF1Mf4u33v.png?type=default&r=zj3" alt="Nash Tefison's Dev Card" width="330" /></a>
 
-  <img src="assets/divider.svg" alt="" width="900" />
+<br /><br />
 
-  <!-- Core Tech Stack (All links touching to prevent underline artifacts) -->
-  <h3>🛠️ Core Tech Stack</h3>
+<img src="assets/coordinate.svg" alt="Xynorash isn’t a name — it’s a coordinate." width="900" />
 
-  <p>
-    <a href="https://neovim.io/" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Neovim-57A143?style=for-the-badge&logo=neovim&logoColor=white" alt="Neovim" /></a> <a href="https://www.rust-lang.org/" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" alt="Rust" /></a> <a href="https://flutter.dev/" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter" /></a> <a href="https://www.jetbrains.com/" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/JetBrains-000000?style=for-the-badge&logo=jetbrains&logoColor=white" alt="JetBrains" /></a> <a href="https://archlinux.org/" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Arch%20Linux-1793D1?style=for-the-badge&logo=arch-linux&logoColor=white" alt="Arch Linux" /></a>
-  </p>
+<br />
 
-  <img src="assets/divider.svg" alt="" width="900" />
+<img src="assets/s-edge.svg" alt="01 · The edge — who stands here" width="900" />
 
-  <!-- Connect Channels -->
-  <h3>📫 Connect With Me</h3>
+<img src="assets/about.svg" alt="Principles: spec first, measure before believing, document what was verified, fail closed" width="900" />
 
-  <p>
-    <a href="mailto:nashtefison@gmail.com"><img src="https://img.shields.io/badge/Gmail-nashtefison%40gmail.com-ea4335?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" /></a> <a href="https://www.linkedin.com/in/nash-tefison-5a343b315" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/LinkedIn-nash--tefison-0a66c2?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" /></a> <a href="https://www.facebook.com/profile.php?id=100014438106807" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Facebook-Profile-1877f2?style=for-the-badge&logo=facebook&logoColor=white" alt="Facebook" /></a>
-  </p>
+<br />
 
-  <img src="assets/divider.svg" alt="" width="900" />
+<img src="assets/s-stack.svg" alt="02 · Footing — what I stand on" width="900" />
 
-  <sub><i>past the edge, there’s always more.</i></sub>
+<img src="assets/stack.svg" alt="Rust, TypeScript, Dart/Flutter, PowerShell + Lua, Neovim, Arch + Hyprland" width="900" />
+
+<br />
+
+<img src="assets/s-past.svg" alt="03 · Past it — what I found out there" width="900" />
+
+<a href="https://xynorash.github.io/xynorash/"><img src="assets/projects.svg" alt="heaplens, xynovim, xyno-scholar, xynorash-pwsh, xyno-arch" width="900" /></a>
+
+<br />
+
+<img src="assets/s-signal.svg" alt="04 · Signal — send a signal across" width="900" />
+
+<a href="https://github.com/Xynorash"><img src="assets/c-github.svg" alt="GitHub" width="270" /></a>
+<a href="mailto:nashtefison@gmail.com"><img src="assets/c-mail.svg" alt="Email" width="270" /></a>
+<a href="https://www.linkedin.com/in/nash-tefison-5a343b315"><img src="assets/c-linkedin.svg" alt="LinkedIn" width="270" /></a>
+<br />
+<a href="https://app.daily.dev/xynorash"><img src="assets/c-dailydev.svg" alt="daily.dev" width="270" /></a>
+<a href="https://www.facebook.com/profile.php?id=100014438106807"><img src="assets/c-facebook.svg" alt="Facebook" width="270" /></a>
+
+<br /><br />
+
+<img src="assets/footer.svg" alt="past the edge, there's always more." width="900" />
 
 </div>
