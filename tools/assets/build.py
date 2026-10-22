@@ -130,11 +130,56 @@ def figure(cx, y, scale=1.0, ring=True):
 
 RING_CSS = "@keyframes ring{0%{transform:scale(.5);opacity:.8}100%{transform:scale(3.4);opacity:0}}"
 
+# --------------------------------------------------------------------------- one big card
+# README stacks these slices edge to edge so they read as a single sectioned card.
+# Each slice paints a gradient addressed in *card* coordinates, so seams vanish.
+
+SLICE_H = {
+    "hero": 500, "identity": 480, "ticker": 44, "coordinate": 260,
+    "h1": 72, "about": 250, "h2": 72, "stack": 250, "h3": 72, "projects": 392,
+    "h4": 72, "signal1": 92, "signal2": 92, "footer": 220,
+}
+ORDER = list(SLICE_H)
+Y0, _acc = {}, 0
+for _k in ORDER:
+    Y0[_k] = _acc
+    _acc += SLICE_H[_k]
+TOTAL = _acc
+
+
+def shell(key, w=900, sides="lr"):
+    """-> (open, close, defs) wrapping a slice in the shared card chrome."""
+    h, y0 = SLICE_H[key], Y0[key]
+    first, last = key == ORDER[0], key == ORDER[-1]
+    cy, ch = (0, h + 40) if first else ((-40, h + 40) if last else (0, h))
+    rx = 18 if (first or last) else 0
+    defs = (
+        f'<linearGradient id="gbg" gradientUnits="userSpaceOnUse" x1="0" y1="{-y0}" x2="0" y2="{TOTAL - y0}">'
+        '<stop offset="0" stop-color="#05040c"/><stop offset=".45" stop-color="#0e0922"/><stop offset="1" stop-color="#1d1442"/></linearGradient>'
+        f'<clipPath id="outer"><rect x="0" y="{cy}" width="{w}" height="{ch}" rx="{rx}"/></clipPath>'
+    )
+    line = f'stroke="{PURPLE}" stroke-opacity=".38" fill="none"'
+    close = ""
+    if first or last:
+        by = .5 if first else -39.5
+        close += f'<rect x=".5" y="{by}" width="{w - 1}" height="{h + 39}" rx="{rx}" {line}/>'
+        if "l" not in sides:
+            close += f'<rect x="-2" y="{by - 1}" width="3" height="{h + 42}" fill="url(#gbg)"/>'
+    else:
+        if "l" in sides:
+            close += f'<line x1=".5" y1="0" x2=".5" y2="{h}" {line}/>'
+        if "r" in sides:
+            close += f'<line x1="{w - .5}" y1="0" x2="{w - .5}" y2="{h}" {line}/>'
+    open_ = f'<g clip-path="url(#outer)"><rect width="{w}" height="{h}" fill="url(#gbg)"/>'
+    return open_, close + "</g>", defs
+
+
 # --------------------------------------------------------------------------- hero
 
 
 def hero():
-    W, H, EY = 900, 500, 340
+    W, H, EY = 900, SLICE_H["hero"], 340
+    op, cl, sdefs = shell("hero")
     r = random.Random(42)
 
     def layer(n, ymax, rmin, rmax, dur, k):
@@ -154,14 +199,13 @@ def hero():
         f'<line x1="{x}" y1="{y}" x2="{x + 110}" y2="{y + 46}" stroke="url(#sw)" stroke-width="1.6" class="shoot" style="animation-delay:{d}s;animation-duration:{p}s"/>'
         for x, y, d, p in [(40, 20, 1, 9), (380, 10, 4.5, 11), (120, 70, 8, 13), (560, 30, 12, 10)]
     )
-    # eclipse rising behind the figure: the "past it" the motto talks about
     ecx, er = 450, 118
     rays = "".join(
-        f'<line x1="{ecx}" y1="{EY}" x2="{ecx + math.cos(math.radians(a)) * 420:.0f}" y2="{EY + math.sin(math.radians(a)) * 420:.0f}" stroke="url(#ray)" stroke-width="{w_}"/>'
-        for a, w_ in [(a, 1 if i % 3 else 1.6) for i, a in enumerate(range(184, 360, 9))]
+        f'<line x1="{ecx}" y1="{EY}" x2="{ecx + math.cos(math.radians(a)) * 420:.0f}" y2="{EY + math.sin(math.radians(a)) * 420:.0f}" stroke="url(#ray)" stroke-width="{1 if i % 3 else 1.6}"/>'
+        for i, a in enumerate(range(184, 360, 9))
     )
     floor_g, floor_defs, floor_css = floor(W, H, EY)
-    body = f"""<rect width="{W}" height="{H}" rx="18" fill="url(#bg2)"/>
+    body = f"""{op}
 <g clip-path="url(#hc)">
 <g filter="url(#blur30)" opacity=".7"><ellipse cx="230" cy="150" rx="260" ry="46" fill="#5b3fd0" style="animation:drift 11s ease-in-out infinite alternate"/><ellipse cx="660" cy="120" rx="280" ry="40" fill="#1fa3b8" opacity=".55" style="animation:drift 14s ease-in-out infinite alternate-reverse"/><ellipse cx="450" cy="210" rx="320" ry="34" fill="#a04bd0" opacity=".45" style="animation:drift 17s ease-in-out infinite alternate"/></g>
 {layer(46, 320, .5, .9, 26, 'a')}{layer(34, 320, .9, 1.4, 18, 'b')}{layer(14, 280, 1.4, 2, 12, 'c')}
@@ -174,15 +218,15 @@ def hero():
 {parts}
 </g>
 {edge(W, EY)}
-<g clip-path="url(#hall)"><rect x="0" y="{EY + 3}" width="{W}" height="{H - EY - 3}" fill="#05040b" opacity=".72"/>
-{floor_g}</g>
+<rect x="0" y="{EY + 3}" width="{W}" height="{H - EY - 3}" fill="url(#ovl)"/>
+{floor_g}
 {figure(ecx, EY - 16)}
 <text x="450" y="98" text-anchor="middle" class="m1" clip-path="url(#c1)">Every system has an edge.</text>
 <text x="450" y="146" text-anchor="middle" class="m2" clip-path="url(#c2)">I like to stand on it, curious,</text>
 <text x="450" y="180" text-anchor="middle" class="m2" clip-path="url(#c3)">and see what&#8217;s past it.</text>
 <rect class="cur" x="0" y="0" width="9" height="22"/>
 <text x="450" y="{H - 26}" text-anchor="middle" class="tag">XYNORASH &#183; A COORDINATE</text>
-<rect x="1" y="1" width="{W - 2}" height="{H - 2}" rx="17" fill="none" stroke="{PURPLE}" stroke-opacity=".35"/>"""
+{cl}"""
     css = f"""
 .rise{{animation:rise 8s linear infinite;opacity:0}}
 @keyframes rise{{0%{{transform:translate(0,0);opacity:0}}12%{{opacity:.95}}100%{{transform:translate(var(--dx),-300px);opacity:0}}}}
@@ -199,112 +243,208 @@ def hero():
 #r1{{animation:grow 1.6s steps(25) .4s both}}#r2{{animation:grow 1.6s steps(31) 2.2s both}}#r3{{animation:grow 1.4s steps(26) 4s both}}
 @keyframes curmove{{0%{{transform:translate(712px,72px)}}22%{{transform:translate(712px,72px)}}23%{{transform:translate(640px,130px)}}43%{{transform:translate(640px,130px)}}44%{{transform:translate(594px,164px)}}100%{{transform:translate(594px,164px)}}}}
 {RING_CSS}{floor_css}"""
-    defs = f"""<linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05040c"/><stop offset=".55" stop-color="#150f30"/><stop offset="1" stop-color="#2a1d5a"/></linearGradient>
-<filter id="blur30" x="-30%" y="-150%" width="160%" height="400%"><feGaussianBlur stdDeviation="30"/></filter>
+    defs = f"""{sdefs}<filter id="blur30" x="-30%" y="-150%" width="160%" height="400%"><feGaussianBlur stdDeviation="30"/></filter>
+<linearGradient id="ovl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05040b" stop-opacity=".72"/><stop offset="1" stop-color="#05040b" stop-opacity="0"/></linearGradient>
 <radialGradient id="corona" cx=".5" cy=".5" r=".5"><stop offset=".62" stop-color="{MAGENTA}" stop-opacity=".55"/><stop offset=".8" stop-color="{PURPLE}" stop-opacity=".25"/><stop offset="1" stop-color="{PURPLE}" stop-opacity="0"/></radialGradient>
 <linearGradient id="ray" gradientUnits="userSpaceOnUse" x1="{ecx}" y1="{EY}" x2="{ecx}" y2="{EY - 420}"><stop offset="0" stop-color="{LILAC}" stop-opacity=".5"/><stop offset="1" stop-color="{LILAC}" stop-opacity="0"/></linearGradient>
-<clipPath id="hall"><rect width="{W}" height="{H}" rx="18"/></clipPath><clipPath id="hc"><rect width="{W}" height="{EY}" rx="18"/></clipPath>
+<clipPath id="hc"><rect width="{W}" height="{EY}"/></clipPath>
 <clipPath id="c1"><rect id="r1" x="170" y="64" width="560" height="46"/></clipPath>
 <clipPath id="c2"><rect id="r2" x="240" y="124" width="420" height="30"/></clipPath>
 <clipPath id="c3"><rect id="r3" x="270" y="158" width="360" height="30"/></clipPath>{floor_defs}"""
     write("hero.svg", svg(W, H, body, css, "Every system has an edge. I like to stand on it, curious, and see what's past it.", defs))
 
 
-# --------------------------------------------------------------------------- section headers
+# --------------------------------------------------------------------------- identity row
 
 
-def section(name, num, title, sub, seed):
-    W, H = 900, 110
-    body = f"""<rect width="{W}" height="{H}" rx="14" fill="url(#bg)"/>
-<g clip-path="url(#rc)"><g filter="url(#blur22)" opacity=".55"><ellipse cx="200" cy="40" rx="190" ry="26" fill="#6b4fd8" style="animation:drift 9s ease-in-out infinite alternate"/><ellipse cx="700" cy="50" rx="200" ry="24" fill="#3aa8c8" opacity=".6" style="animation:drift 12s ease-in-out infinite alternate-reverse"/></g>
-{stars(26, W, 70, seed)}
-<line x1="0" y1="0" x2="90" y2="40" stroke="url(#sw)" stroke-width="1.5" class="shoot" style="animation-duration:7s;animation-delay:{seed % 5}s"/></g>
-<ellipse cx="450" cy="92" rx="360" ry="34" fill="url(#glow)" style="animation:pulse 4s ease-in-out infinite"/>
-{edge(W, 92, 30)}
-<path d="M14 26V14h12M886 26V14h-12M14 84v12h12M886 84v12h-12" stroke="{PURPLE}" stroke-opacity=".6" fill="none" style="animation:pulse 3s infinite"/>
-<text x="450" y="38" text-anchor="middle" class="n">{num}</text>
-<text x="450" y="68" text-anchor="middle" class="t">{title}</text>
-<text x="450" y="86" text-anchor="middle" class="s">{sub}</text>"""
-    css = f""".n{{font:500 11px {FONT};fill:#7f70b8;letter-spacing:6px;animation:in 1s ease both}}
-.t{{font:700 26px {FONT};fill:url(#txt);letter-spacing:2px;animation:in 1s .15s ease both}}
-.s{{font:400 11px {FONT};fill:#9d8fd6;animation:in 1s .3s ease both}}"""
-    defs = '<clipPath id="rc"><rect width="900" height="110" rx="14"/></clipPath><filter id="blur22" x="-30%" y="-150%" width="160%" height="400%"><feGaussianBlur stdDeviation="22"/></filter>'
-    write(name, svg(W, H, body, css, title, defs))
+def data_uri(img):
+    b = io.BytesIO()
+    img.save(b, "PNG", optimize=True)
+    return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+
+
+IDW_L, IDW_R, ID_EY = 560, 340, 400
+
+
+def logo_panel():
+    logo = Image.open(ROOT / "xynorash_logo.png").convert("RGBA").crop((225, 180, 1325, 850))
+    logo = logo.resize((int(logo.width * .8), int(logo.height * .8)), Image.LANCZOS)
+    url = data_uri(logo)
+    W, H, EY = IDW_L, SLICE_H["identity"], ID_EY
+    op, cl, sdefs = shell("identity", W, "lr")
+    dw = 470
+    dh = dw * logo.height / logo.width
+    lx, ly = (W - dw) / 2, EY - dh - 16
+    floor_g, floor_defs, floor_css = floor(W, H, EY, lines=5, cols=11, dur=4)
+    body = f"""{op}
+<g clip-path="url(#pc)"><g filter="url(#blur28)" opacity=".75"><ellipse cx="170" cy="190" rx="170" ry="60" fill="{CYAN}" opacity=".28" style="animation:drift 10s ease-in-out infinite alternate"/><ellipse cx="400" cy="240" rx="170" ry="70" fill="{MAGENTA}" opacity=".3" style="animation:drift 13s ease-in-out infinite alternate-reverse"/></g>
+{stars(46, W, EY, 17)}<ellipse cx="{W / 2}" cy="{EY}" rx="270" ry="60" fill="url(#glow)" style="animation:pulse 4s infinite"/></g>
+{edge(W, EY)}
+<rect x="0" y="{EY + 3}" width="{W}" height="{H - EY - 3}" fill="url(#ovl)"/>
+{floor_g}
+<g class="lg"><use href="#lg"/><g mask="url(#lm)"><rect x="{lx:.0f}" y="{ly:.0f}" width="140" height="{dh:.0f}" fill="url(#sw)" style="animation:sweep2 4.5s ease-in-out infinite"/></g></g>
+<text x="40" y="44" class="tg">// SIGNATURE</text><text x="{W - 24}" y="44" text-anchor="end" class="tg">v5.5 &#183; LIVE</text>
+<circle cx="{W - 124}" cy="40" r="3" fill="{CYAN}" style="animation:pulse 1.6s infinite"/>
+{cl}"""
+    css = f""".lg{{animation:bob 4.5s ease-in-out infinite;filter:drop-shadow(0 0 14px rgba(160,90,255,.55))}}
+@keyframes sweep2{{0%{{transform:translateX(-180px)}}100%{{transform:translateX({dw + 120}px)}}}}
+.tg{{font:500 11px {FONT};fill:#7f70b8;letter-spacing:5px}}{floor_css}"""
+    defs = (
+        sdefs
+        + f'<clipPath id="pc"><rect width="{W}" height="{EY}"/></clipPath>'
+        + '<linearGradient id="ovl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05040b" stop-opacity=".7"/><stop offset="1" stop-color="#05040b" stop-opacity="0"/></linearGradient>'
+        + floor_defs
+        + f'<image id="lg" href="{url}" x="{lx:.0f}" y="{ly:.0f}" width="{dw}" height="{dh:.0f}"/>'
+        + '<mask id="lm"><use href="#lg"/></mask>'
+    )
+    write("logo.svg", svg(W, H, body, css, "Xynorash logo", defs))
+
+
+def card_panel():
+    card = Image.open(ROOT / "devcard.png").convert("RGBA")
+    card = card.resize((470, int(470 * card.height / card.width)), Image.LANCZOS)
+    url = data_uri(card)
+    W, H, EY = IDW_R, SLICE_H["identity"], ID_EY
+    op, cl, sdefs = shell("identity", W, "r")
+    cw = 250
+    ch = cw * card.height / card.width
+    cx, cy = (W - cw) / 2, (EY - ch) / 2 + 6
+    mid = EY / 2
+    body = f"""{op}
+<g clip-path="url(#pc)"><g filter="url(#blur26)" opacity=".8"><ellipse cx="80" cy="150" rx="110" ry="80" fill="#5b3fd0" style="animation:drift 9s ease-in-out infinite alternate"/><ellipse cx="260" cy="320" rx="110" ry="80" fill="{CYAN}" opacity=".5" style="animation:drift 12s ease-in-out infinite alternate-reverse"/></g>{stars(30, W, EY, 31)}</g>
+<g style="transform-origin:{W / 2}px {mid:.0f}px;animation:spin 16s linear infinite"><ellipse cx="{W / 2}" cy="{mid:.0f}" rx="150" ry="192" fill="none" stroke="{PURPLE}" stroke-opacity=".35" stroke-dasharray="3 9"/><circle cx="{W / 2}" cy="{mid - 192:.0f}" r="3" fill="{CYAN}"/></g>
+<g class="cd"><rect x="{cx - 4:.0f}" y="{cy - 4:.0f}" width="{cw + 8}" height="{ch + 8:.0f}" rx="24" fill="none" stroke="url(#neon)" stroke-width="2"/>
+<use href="#cdi"/><g mask="url(#cm)"><rect x="{cx:.0f}" y="{cy:.0f}" width="80" height="{ch:.0f}" fill="url(#sw)" opacity=".6" style="animation:sweep3 5s ease-in-out infinite"/></g></g>
+{edge(W, EY, 0, False)}
+<rect x="0" y="{EY + 3}" width="{W}" height="{H - EY - 3}" fill="url(#ovl)"/>
+<text x="{W / 2}" y="{H - 38}" text-anchor="middle" class="tg">dev card &#183; synced daily</text>
+{cl}"""
+    css = f""".cd{{transform-origin:{W / 2}px {mid:.0f}px;animation:wob 6s ease-in-out infinite;filter:drop-shadow(0 8px 18px rgba(120,80,255,.35))}}
+@keyframes wob{{0%,100%{{transform:translateY(0) rotate(-1.2deg)}}50%{{transform:translateY(-6px) rotate(1.2deg)}}}}
+@keyframes sweep3{{0%{{transform:translateX(-120px)}}100%{{transform:translateX({cw + 60}px)}}}}
+.tg{{font:500 10px {FONT};fill:#7f70b8;letter-spacing:4px}}"""
+    defs = (
+        sdefs
+        + f'<clipPath id="pc"><rect width="{W}" height="{EY}"/></clipPath>'
+        + '<linearGradient id="ovl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05040b" stop-opacity=".7"/><stop offset="1" stop-color="#05040b" stop-opacity="0"/></linearGradient>'
+        + '<filter id="blur26" x="-30%" y="-150%" width="160%" height="400%"><feGaussianBlur stdDeviation="26"/></filter>'
+        + f'<image id="cdi" href="{url}" x="{cx:.0f}" y="{cy:.0f}" width="{cw}" height="{ch:.0f}"/><mask id="cm"><use href="#cdi"/></mask>'
+    )
+    write("devcard.svg", svg(W, H, body, css, "Nash Tefison daily.dev card", defs))
 
 
 # --------------------------------------------------------------------------- ticker
 
 
 def ticker():
-    W, H = 900, 44
+    W, H = 900, SLICE_H["ticker"]
+    op, cl, sdefs = shell("ticker")
     words = ["RUST", "DART", "FLUTTER", "LUA", "POWERSHELL", "NEOVIM", "ARCH", "HYPRLAND", "SYSTEMD"]
     unit = "  ◆  ".join(words) + "  ◆  "
-    tl = 1500  # fixed length for a seamless loop
-    body = f"""<rect width="{W}" height="{H}" rx="10" fill="url(#bg)"/>
-<g clip-path="url(#tc)"><g class="tk"><text x="0" y="27" class="w" textLength="{tl}" lengthAdjust="spacing">{unit}</text><text x="{tl}" y="27" class="w" textLength="{tl}" lengthAdjust="spacing">{unit}</text></g>
-<rect width="120" height="{H}" fill="url(#fl2)"/><rect x="{W - 120}" width="120" height="{H}" fill="url(#fr2)"/></g>
-<rect x="30" y="{H - 2}" width="{W - 60}" height="1.6" fill="url(#edge)"/>"""
+    tl = 1500
+    body = f"""{op}<g><g class="tk"><text x="0" y="27" class="w" textLength="{tl}" lengthAdjust="spacing">{unit}</text><text x="{tl}" y="27" class="w" textLength="{tl}" lengthAdjust="spacing">{unit}</text></g>
+<rect width="140" height="{H}" fill="url(#fl2)"/><rect x="{W - 140}" width="140" height="{H}" fill="url(#fr2)"/></g>
+<rect x="0" y="0" width="{W}" height="1" fill="url(#edge)" opacity=".7"/><rect x="0" y="{H - 1}" width="{W}" height="1" fill="url(#edge)" opacity=".7"/>{cl}"""
     css = f".w{{font:500 12px {FONT};fill:#9d8fd6;letter-spacing:3px;white-space:pre}}.tk{{animation:tick 28s linear infinite}}@keyframes tick{{to{{transform:translateX(-{tl}px)}}}}"
     defs = (
-        f'<clipPath id="tc"><rect width="{W}" height="{H}" rx="10"/></clipPath>'
-        '<linearGradient id="fl2"><stop offset="0" stop-color="#05040c"/><stop offset="1" stop-color="#05040c" stop-opacity="0"/></linearGradient>'
-        '<linearGradient id="fr2"><stop offset="0" stop-color="#05040c" stop-opacity="0"/><stop offset="1" stop-color="#05040c"/></linearGradient>'
+        sdefs
+        + '<linearGradient id="fl2"><stop offset="0" stop-color="#0b0820"/><stop offset="1" stop-color="#0b0820" stop-opacity="0"/></linearGradient>'
+        + '<linearGradient id="fr2"><stop offset="0" stop-color="#0b0820" stop-opacity="0"/><stop offset="1" stop-color="#0b0820"/></linearGradient>'
     )
     write("ticker.svg", svg(W, H, body, css, "Rust, Dart, Flutter, Lua, PowerShell, Neovim, Arch, Hyprland", defs))
+
+
+# --------------------------------------------------------------------------- coordinate radar
+
+
+def coordinate():
+    W, H = 900, SLICE_H["coordinate"]
+    op, cl, sdefs = shell("coordinate")
+    cx, cy = 450, 130
+    rings = "".join(
+        f'<circle cx="{cx}" cy="{cy}" r="{rr}" fill="none" stroke="{PURPLE}" stroke-opacity="{.5 - i * .1:.2f}" stroke-dasharray="{2 + i * 2} 6"/>'
+        for i, rr in enumerate([30, 60, 90, 120])
+    )
+    blips = "".join(
+        f'<circle cx="{cx + math.cos(a) * rr:.0f}" cy="{cy + math.sin(a) * rr:.0f}" r="3" fill="{CYAN}" class="bl" style="animation-delay:{d}s"/>'
+        for a, rr, d in [(0.6, 70, .8), (2.2, 95, 2.2), (3.9, 50, 3.6), (5.2, 108, 4.9), (1.4, 38, 1.5)]
+    )
+    body = f"""{op}<g>{stars(30, W, H, 9)}</g>{rings}
+<line x1="{cx - 140}" y1="{cy}" x2="{cx + 140}" y2="{cy}" stroke="{PURPLE}" stroke-opacity=".35"/><line x1="{cx}" y1="0" x2="{cx}" y2="{H}" stroke="{PURPLE}" stroke-opacity=".25"/>
+<g style="transform-origin:{cx}px {cy}px;animation:spin 5s linear infinite"><path d="M{cx} {cy} L{cx} {cy - 120} A120 120 0 0 0 {cx - 104} {cy - 60} Z" fill="url(#rad)"/><line x1="{cx}" y1="{cy}" x2="{cx}" y2="{cy - 120}" stroke="{LILAC}" stroke-width="1.5"/></g>
+{blips}
+<circle cx="{cx}" cy="{cy}" r="5" fill="#fff"/><circle cx="{cx}" cy="{cy}" r="5" fill="none" stroke="#fff" style="transform-box:fill-box;transform-origin:center;animation:ping 2.4s ease-out infinite"/>
+<text x="40" y="52" class="l">XYNORASH</text><text x="40" y="72" class="s">isn&#8217;t a name.</text>
+<text x="860" y="52" text-anchor="end" class="l">COORDINATE</text><text x="860" y="72" text-anchor="end" class="s">x &#8594; unknown &#183; y &#8594; unknown &#183; z &#8594; past the edge</text>
+<text x="40" y="232" class="s">scanning<tspan style="animation:blink 1s steps(1) infinite"> &#9646;</tspan></text><text x="860" y="232" text-anchor="end" class="s">5 signals locked</text>{cl}"""
+    css = f""".l{{font:700 16px {FONT};fill:#fff;letter-spacing:4px}}.s{{font:400 11px {FONT};fill:#9d8fd6}}
+@keyframes ping{{0%{{transform:scale(1);opacity:.8}}100%{{transform:scale(7);opacity:0}}}}
+.bl{{transform-box:fill-box;transform-origin:center;animation:blip 5s infinite}}
+@keyframes blip{{0%,28%{{opacity:0;transform:scale(.3)}}34%{{opacity:1;transform:scale(1.6)}}70%{{opacity:.5;transform:scale(1)}}100%{{opacity:0}}}}"""
+    defs = sdefs + f'<linearGradient id="rad" gradientUnits="userSpaceOnUse" x1="{cx}" y1="{cy - 120}" x2="{cx - 104}" y2="{cy - 60}"><stop offset="0" stop-color="{PURPLE}" stop-opacity=".6"/><stop offset="1" stop-color="{PURPLE}" stop-opacity="0"/></linearGradient>'
+    write("coordinate.svg", svg(W, H, body, css, "Xynorash is not a name, it is a coordinate", defs))
+
+
+# --------------------------------------------------------------------------- section header bands
+
+
+def section(key, num, title, sub, seed):
+    W, H = 900, SLICE_H[key]
+    op, cl, sdefs = shell(key)
+    body = f"""{op}<g clip-path="url(#rc)"><g filter="url(#blur22)" opacity=".5"><ellipse cx="170" cy="30" rx="170" ry="22" fill="#6b4fd8" style="animation:drift 9s ease-in-out infinite alternate"/><ellipse cx="720" cy="40" rx="190" ry="20" fill="#3aa8c8" opacity=".6" style="animation:drift 12s ease-in-out infinite alternate-reverse"/></g>{stars(18, W, 56, seed)}
+<line x1="0" y1="0" x2="90" y2="40" stroke="url(#sw)" stroke-width="1.5" class="shoot" style="animation-duration:7s;animation-delay:{seed % 5}s"/></g>
+<ellipse cx="450" cy="{H - 4}" rx="380" ry="26" fill="url(#glow)" style="animation:pulse 4s ease-in-out infinite"/>
+{edge(W, H - 6)}
+<circle cx="0" cy="{H - 5}" r="3.2" fill="#fff" style="animation:travel 7s linear {seed % 4}s infinite"/>
+<text x="40" y="26" class="n">{num}</text>
+<text x="40" y="51" class="t">{title}</text>
+<text x="{W - 40}" y="50" text-anchor="end" class="s">{sub}</text>{cl}"""
+    css = f""".n{{font:600 11px {FONT};fill:url(#neon);letter-spacing:6px;animation:in 1s ease both}}
+.t{{font:700 22px {FONT};fill:url(#txt);letter-spacing:2px;animation:in 1s .15s ease both}}
+.s{{font:400 11px {FONT};fill:#9d8fd6;animation:in 1s .3s ease both}}
+@keyframes travel{{0%{{transform:translateX(0);opacity:0}}6%{{opacity:1}}94%{{opacity:1}}100%{{transform:translateX({W}px);opacity:0}}}}"""
+    defs = sdefs + f'<clipPath id="rc"><rect width="{W}" height="{H}"/></clipPath><filter id="blur22" x="-30%" y="-150%" width="160%" height="400%"><feGaussianBlur stdDeviation="22"/></filter>'
+    write(f"s-{key}.svg", svg(W, H, body, css, title, defs))
 
 
 # --------------------------------------------------------------------------- about (editor)
 
 
 def about():
-    W, H = 900, 296
+    W, H = 900, SLICE_H["about"]
+    op, cl, sdefs = shell("about")
     lines = [
         ("spec first.", " measure before believing."),
         ("document", " what was verified, not what was intended."),
         ("when a heuristic can be wrong,", " make the failure a test."),
         ("fail closed.", " if safety can’t be established, say no."),
     ]
-    body = f"""<rect width="{W}" height="{H}" rx="14" fill="url(#bg)"/><g>{stars(26, W, H - 40, 5)}</g>
-<rect x="0" y="0" width="{W}" height="38" rx="14" fill="#0c0920"/><rect x="0" y="24" width="{W}" height="14" fill="#0c0920"/>
+    body = f"""{op}<g>{stars(22, W, H, 5)}</g>
+<rect x="0" y="0" width="{W}" height="38" fill="#0a071b" opacity=".85"/>
 <circle cx="26" cy="19" r="5" fill="#ff6b8b"/><circle cx="46" cy="19" r="5" fill="#f2c86a"/><circle cx="66" cy="19" r="5" fill="#6ad6a0"/>
 <rect x="110" y="8" width="170" height="30" rx="8" fill="#150f30"/><rect x="110" y="36" width="170" height="2" fill="url(#neon)"/>
 <text x="126" y="28" class="tab">principles.md</text>
-<rect x="56" y="38" width="1" height="{H - 76}" fill="{PURPLE}" opacity=".25"/>"""
-    css = f".ln{{font:400 15px {FONT};fill:#4d4382}}.p{{font:500 17px {FONT}}}.tab{{font:500 12px {FONT};fill:#c9b8ff}}.sl{{font:600 11px {FONT}}}"
-    defs = ""
+<rect x="56" y="38" width="1" height="{H - 38}" fill="{PURPLE}" opacity=".25"/>"""
+    css = f".ln{{font:400 15px {FONT};fill:#4d4382}}.p{{font:500 17px {FONT}}}.tab{{font:500 12px {FONT};fill:#c9b8ff}}"
+    defs = sdefs
     for i, (a, b) in enumerate(lines):
-        y = 82 + i * 38
+        y = 84 + i * 38
         n = len(a) + len(b)
-        cw = 10.25
         d = 0.5 + i * 1.5
         body += (
-            f'<text x="34" y="{y}" class="ln" text-anchor="end" transform="translate(12 0)">{i + 1}</text>'
+            f'<text x="46" y="{y}" class="ln" text-anchor="end">{i + 1}</text>'
             f'<text x="74" y="{y}" class="p" clip-path="url(#l{i})"><tspan fill="#fff" font-weight="700">{a}</tspan><tspan fill="#b9a8ff">{b}</tspan></text>'
         )
-        defs += f'<clipPath id="l{i}"><rect class="rv" id="lr{i}" x="70" y="{y - 20}" width="{n * cw + 12:.0f}" height="28"/></clipPath>'
+        defs += f'<clipPath id="l{i}"><rect class="rv" id="lr{i}" x="70" y="{y - 20}" width="{n * 10.25 + 12:.0f}" height="28"/></clipPath>'
         css += f"#lr{i}{{transform-box:fill-box;transform-origin:left;animation:grow {n * .035:.2f}s steps({n}) {d}s both}}"
-    # cursor line + statusline
-    body += f"""<text x="34" y="{82 + 4 * 38}" class="ln" text-anchor="end" transform="translate(12 0)">5</text>
-<rect x="74" y="{82 + 4 * 38 - 17}" width="10" height="21" fill="{LILAC}" style="animation:blink 1s steps(1) infinite"/>
-<rect y="{H - 30}" width="{W}" height="30" fill="#0c0920"/><rect x="0" y="{H - 30}" width="{W}" height="1" fill="{PURPLE}" opacity=".3"/>
-<g class="mode m-n"><rect x="0" y="{H - 30}" width="92" height="30" fill="{PURPLE}"/><text x="46" y="{H - 11}" text-anchor="middle" class="sl" fill="#0c0920">NORMAL</text></g>
-<g class="mode m-i"><rect x="0" y="{H - 30}" width="92" height="30" fill="{CYAN}"/><text x="46" y="{H - 11}" text-anchor="middle" class="sl" fill="#0c0920">INSERT</text></g>
-<g class="mode m-v"><rect x="0" y="{H - 30}" width="92" height="30" fill="{MAGENTA}"/><text x="46" y="{H - 11}" text-anchor="middle" class="sl" fill="#0c0920">VISUAL</text></g>
-<text x="108" y="{H - 11}" class="sl" fill="#9d8fd6">xynorash/principles.md</text><text x="{W - 20}" y="{H - 11}" text-anchor="end" class="sl" fill="#7f70b8">utf-8  &#183;  markdown  &#183;  5:1</text>"""
-    css += """.mode{opacity:0;animation:modes 12s steps(1) infinite}
-.m-n{animation-name:mn}.m-i{animation-name:mi}.m-v{animation-name:mv}
-@keyframes mn{0%,40%{opacity:1}41%,100%{opacity:0}}
-@keyframes mi{0%,40%{opacity:0}41%,70%{opacity:1}71%,100%{opacity:0}}
-@keyframes mv{0%,70%{opacity:0}71%,85%{opacity:1}86%,100%{opacity:0}}
-"""
+    body += f"""<text x="46" y="{84 + 4 * 38}" class="ln" text-anchor="end">5</text>
+<rect x="74" y="{84 + 4 * 38 - 17}" width="10" height="21" fill="{LILAC}" style="animation:blink 1s steps(1) infinite"/>{cl}"""
     write("about.svg", svg(W, H, body, css, "principles.md: spec first, measure before believing, document what was verified, fail closed", defs))
 
 
 # --------------------------------------------------------------------------- stack
 
-
 GLYPHS = {
-    # simple geometric marks, drawn in a 0..24 box
     "rust": '<circle cx="12" cy="12" r="6.5" fill="none" stroke="{c}" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="{c}"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M5 19l2-2" stroke="{c}" stroke-width="2" stroke-linecap="round"/>',
     "dart": '<path d="M4 12L12 4l8 4-4 4 4 4-8 4z" fill="none" stroke="{c}" stroke-width="2" stroke-linejoin="round"/>',
     "ps": '<path d="M5 6l8 6-8 6" fill="none" stroke="{c}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 19h6" stroke="{c}" stroke-width="2.4" stroke-linecap="round"/>',
@@ -314,7 +454,8 @@ GLYPHS = {
 
 
 def stack():
-    W, H, EY = 900, 250, 188
+    W, H, EY = 900, SLICE_H["stack"], 188
+    op, cl, sdefs = shell("stack")
     items = [
         ("Rust", "systems", "#f0a56a", "rust"),
         ("Dart/Flutter", "UI · this site", "#4fd1e0", "dart"),
@@ -322,20 +463,20 @@ def stack():
         ("Neovim", "the cockpit", "#7ad66a", "nvim"),
         ("Arch/Hyprland", "the desktop", "#6ab4f0", "arch"),
     ]
-    body = f"""<rect width="{W}" height="{H}" rx="14" fill="url(#bg)"/><g>{stars(40, W, EY - 20, 11)}</g>
-<ellipse cx="450" cy="{EY}" rx="420" ry="50" fill="url(#glow)" style="animation:pulse 5s infinite"/>{edge(W, EY, 20)}"""
+    body = f"""{op}<g>{stars(36, W, EY - 20, 11)}</g>
+<ellipse cx="450" cy="{EY}" rx="420" ry="50" fill="url(#glow)" style="animation:pulse 5s infinite"/>{edge(W, EY)}"""
     gap = (W - 80) / len(items)
-    for i, (t, s, c, g) in enumerate(items):
+    for i, (t, s_, c, g) in enumerate(items):
         cx = 40 + gap * i + gap / 2
         d = 3 + (i % 3) * .7
         body += f"""<g style="animation:in .8s {.2 + i * .15:.2f}s ease both"><g style="animation:bob {d}s ease-in-out infinite;animation-delay:-{i * .6}s">
-<rect x="{cx - 70:.0f}" y="64" width="140" height="92" rx="12" fill="#120e26" stroke="{c}" stroke-opacity=".5"/>
-<rect x="{cx - 70:.0f}" y="64" width="140" height="92" rx="12" fill="url(#cardglow{i})"/>
-<g transform="translate({cx - 12:.0f} 76) scale(1)"><circle cx="12" cy="12" r="19" fill="{c}" fill-opacity=".1" style="animation:pulse 3s {i * .4}s infinite"/>{GLYPHS[g].format(c=c)}</g>
-<text x="{cx:.0f}" y="128" text-anchor="middle" class="k">{t}</text><text x="{cx:.0f}" y="145" text-anchor="middle" class="d">{s}</text></g>
-<line x1="{cx:.0f}" y1="158" x2="{cx:.0f}" y2="{EY}" stroke="{c}" stroke-opacity=".4" stroke-dasharray="2 4"/><circle cx="{cx:.0f}" cy="{EY}" r="3" fill="{c}"/></g>"""
-    body += f'<text x="450" y="{H - 22}" text-anchor="middle" class="d" style="letter-spacing:4px;fill:#7f70b8">STANDING ON THE EDGE</text>'
-    defs = "".join(
+<rect x="{cx - 70:.0f}" y="46" width="140" height="92" rx="12" fill="#120e26" fill-opacity=".8" stroke="{c}" stroke-opacity=".5"/>
+<rect x="{cx - 70:.0f}" y="46" width="140" height="92" rx="12" fill="url(#cardglow{i})"/>
+<g transform="translate({cx - 12:.0f} 58)"><circle cx="12" cy="12" r="19" fill="{c}" fill-opacity=".1" style="animation:pulse 3s {i * .4}s infinite"/>{GLYPHS[g].format(c=c)}</g>
+<text x="{cx:.0f}" y="110" text-anchor="middle" class="k">{t}</text><text x="{cx:.0f}" y="127" text-anchor="middle" class="d">{s_}</text></g>
+<line x1="{cx:.0f}" y1="146" x2="{cx:.0f}" y2="{EY}" stroke="{c}" stroke-opacity=".4" stroke-dasharray="2 4"/><circle cx="{cx:.0f}" cy="{EY}" r="3" fill="{c}"/></g>"""
+    body += f'<text x="450" y="{H - 18}" text-anchor="middle" class="d" style="letter-spacing:4px;fill:#7f70b8">STANDING ON THE EDGE</text>{cl}'
+    defs = sdefs + "".join(
         f'<radialGradient id="cardglow{i}" cx=".5" cy="0" r=".9"><stop offset="0" stop-color="{c}" stop-opacity=".16"/><stop offset="1" stop-color="{c}" stop-opacity="0"/></radialGradient>'
         for i, (_, _, c, _) in enumerate(items)
     )
@@ -347,7 +488,8 @@ def stack():
 
 
 def projects():
-    W = 900
+    W, H = 900, SLICE_H["projects"]
+    op, cl, sdefs = shell("projects")
     rows = [
         ("heaplens/", "live heap inspector for Windows", "Rust", "#f0a56a"),
         ("xynovim/", "my Neovim, tuned until it disappears", "Lua", "#7ad66a"),
@@ -356,13 +498,12 @@ def projects():
         ("xyno-arch/", "my whole Arch desktop, reproducible", "Arch", "#6ab4f0"),
     ]
     rh, top = 52, 108
-    H = top + rh * len(rows) + 24
     cmd = "ls ~/past-the-edge"
-    body = f"""<rect width="{W}" height="{H}" rx="14" fill="url(#bg)"/><g>{stars(34, W, H, 21)}</g>
-<rect width="{W}" height="40" rx="14" fill="#0c0920"/><rect y="26" width="{W}" height="14" fill="#0c0920"/>
+    body = f"""{op}<g>{stars(30, W, H, 21)}</g>
+<rect width="{W}" height="40" fill="#0a071b" opacity=".85"/>
 <circle cx="26" cy="20" r="5" fill="#ff6b8b"/><circle cx="46" cy="20" r="5" fill="#f2c86a"/><circle cx="66" cy="20" r="5" fill="#6ad6a0"/>
 <text x="450" y="24" text-anchor="middle" class="d">xynorash@edge: ~</text>
-<rect x="20" y="40" width="{W - 40}" height="1" fill="{PURPLE}" opacity=".3"/>
+<rect x="0" y="40" width="{W}" height="1" fill="{PURPLE}" opacity=".3"/>
 <text x="30" y="76" class="ps"><tspan fill="{CYAN}">xynorash</tspan><tspan fill="#7f70b8">@</tspan><tspan fill="{MAGENTA}">edge</tspan><tspan fill="#7f70b8"> ~ </tspan><tspan fill="{PURPLE}">&#10095;</tspan></text>
 <text x="206" y="76" class="cmd" clip-path="url(#cc)">{cmd}</text>
 <rect class="cur2" x="0" y="0" width="9" height="19"/>"""
@@ -372,7 +513,7 @@ def projects():
 .cur2{{fill:{LILAC};animation:blink 1s steps(1) infinite,c2 6s steps(1) forwards}}
 @keyframes c2{{0%{{transform:translate(206px,61px)}}30%{{transform:translate({206 + len(cmd) * 8.4:.0f}px,61px)}}100%{{transform:translate({206 + len(cmd) * 8.4:.0f}px,61px)}}}}
 .row{{opacity:0;animation:in .7s ease both}}"""
-    defs = f'<clipPath id="cc"><rect id="cr" x="202" y="60" width="{len(cmd) * 8.6 + 8:.0f}" height="22"/></clipPath>'
+    defs = sdefs + f'<clipPath id="cc"><rect id="cr" x="202" y="60" width="{len(cmd) * 8.6 + 8:.0f}" height="22"/></clipPath>'
     for i, (n, d_, l, c) in enumerate(rows):
         y = top + i * rh
         body += f"""<g class="row" style="animation-delay:{1.9 + i * .22:.2f}s"><rect x="20" y="{y}" width="{W - 40}" height="{rh - 8}" rx="9" fill="{c}" fill-opacity=".06" stroke="{c}" stroke-opacity=".18"/>
@@ -380,171 +521,97 @@ def projects():
 <g style="overflow:hidden"><rect x="40" y="{y}" width="160" height="{rh - 8}" fill="url(#sw)" opacity=".07" style="animation:sweep 6s {i * .9:.1f}s ease-in-out infinite"/></g>
 <text x="44" y="{y + 28}" class="pr">&#10095;</text><text x="70" y="{y + 28}" class="nm">{n}</text><text x="290" y="{y + 28}" class="d2">{d_}</text>
 <circle cx="{W - 160}" cy="{y + 23}" r="4" fill="{c}" style="animation:pulse 2.4s {i * .3:.1f}s infinite"/><text x="{W - 40}" y="{y + 27}" text-anchor="end" class="tag" fill="{c}">{l.upper()}</text></g>"""
+    body += cl
     write("projects.svg", svg(W, H, body, css, "Projects: heaplens, xynovim, xyno-scholar, xynorash-pwsh, xyno-arch", defs))
 
 
-# --------------------------------------------------------------------------- connect buttons
+# --------------------------------------------------------------------------- signal cells
 
 ICONS = {
     "gh": '<path transform="scale(1.5)" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" fill="{c}"/>',
-    "mail": '<rect x="3" y="5" width="18" height="14" rx="2.500" fill="none" stroke="{c}" stroke-width="2"/><path d="M3.500 7l8.500 6 8.500-6" fill="none" stroke="{c}" stroke-width="2" stroke-linejoin="round"/>',
-    "in": '<rect x="3" y="3" width="18" height="18" rx="3.500" fill="none" stroke="{c}" stroke-width="2"/><path d="M8 10.500V17M8 7.200v.1M12 17v-3.500a2.500 2.500 0 0 1 5 0V17M12 10.500V17" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round"/>',
-    "fb": '<rect x="3" y="3" width="18" height="18" rx="3.500" fill="none" stroke="{c}" stroke-width="2"/><path d="M15.500 21v-7h2.300M13 14h2.500M15.500 14v-2.300c0-1.200.7-1.700 1.700-1.700h.8" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" transform="translate(-1 0)"/>',
-    "dd": '<path d="M3 12l5-5 4 4M21 12l-5 5-4-4M8 17l-3-3M16 7l3 3" fill="none" stroke="{c}" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round"/>',
+    "mail": '<rect x="3" y="5" width="18" height="14" rx="2.5" fill="none" stroke="{c}" stroke-width="2"/><path d="M3.5 7l8.5 6 8.5-6" fill="none" stroke="{c}" stroke-width="2" stroke-linejoin="round"/>',
+    "in": '<rect x="3" y="3" width="18" height="18" rx="3.5" fill="none" stroke="{c}" stroke-width="2"/><path d="M8 10.5V17M8 7.2v.1M12 17v-3.5a2.5 2.5 0 0 1 5 0V17M12 10.5V17" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round"/>',
+    "fb": '<rect x="3" y="3" width="18" height="18" rx="3.5" fill="none" stroke="{c}" stroke-width="2"/><path d="M15.5 21v-7h2.3M13 14h2.5M15.5 14v-2.3c0-1.2.7-1.7 1.7-1.7h.8" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" transform="translate(-1 0)"/>',
+    "dd": '<path d="M3 12l5-5 4 4M21 12l-5 5-4-4M8 17l-3-3M16 7l3 3" fill="none" stroke="{c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
 }
+CW = 300
 
 
-def button(name, icon, label, sub, col):
-    W, H = 270, 68
-    body = f"""<rect x="1" y="1" width="{W - 2}" height="{H - 2}" rx="13" fill="url(#bg)" stroke="{col}" stroke-opacity=".55"/>
-<rect x="1" y="1" width="{W - 2}" height="{H - 2}" rx="13" fill="url(#bglow)"/>
-<g style="overflow:hidden"><rect x="0" y="0" width="120" height="{H}" fill="url(#sw)" opacity=".1" style="animation:sweep 5s ease-in-out infinite"/></g>
-<circle cx="38" cy="34" r="16" fill="none" stroke="{col}" stroke-opacity=".6" style="transform-box:fill-box;transform-origin:center;animation:sig 3s ease-out infinite"/>
-<circle cx="38" cy="34" r="16" fill="{col}" fill-opacity=".12"/>
-<g transform="translate(26 22)">{ICONS[icon].format(c=col)}</g>
-<text x="68" y="31" class="b">{label}</text><text x="68" y="49" class="u">{sub}</text>
-<path d="M{W - 34} 28l8 6-8 6" fill="none" stroke="{col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:nudge 2.4s ease-in-out infinite"/>"""
-    css = f".b{{font:700 15px {FONT};fill:#fff}}.u{{font:400 10.5px {FONT};fill:#9d8fd6}}@keyframes sig{{0%{{transform:scale(.8);opacity:.9}}100%{{transform:scale(1.9);opacity:0}}}}@keyframes nudge{{0%,100%{{transform:translateX(0)}}50%{{transform:translateX(4px)}}}}"
-    defs = f'<radialGradient id="bglow" cx="0" cy=".5" r="1"><stop offset="0" stop-color="{col}" stop-opacity=".16"/><stop offset="1" stop-color="{col}" stop-opacity="0"/></radialGradient>'
-    write(name, svg(W, H, body, css, label, defs))
-
-
-# --------------------------------------------------------------------------- coordinate radar
-
-
-def coordinate():
-    W, H = 900, 260
-    cx, cy = 450, 130
-    rings = "".join(
-        f'<circle cx="{cx}" cy="{cy}" r="{rr}" fill="none" stroke="{PURPLE}" stroke-opacity="{.5 - i * .1:.2f}" stroke-dasharray="{2 + i * 2} 6"/>'
-        for i, rr in enumerate([30, 60, 90, 120])
+def cell(name, row, col, icon, label, sub, colr):
+    """One cell of the 3-wide signal grid; icon=None draws the live-channel filler."""
+    key = f"signal{row}"
+    H = SLICE_H[key]
+    sides = {0: "l", 1: "", 2: "r"}[col]
+    op, cl, sdefs = shell(key, CW, sides)
+    grid = f'<line x1="0" y1="{H - .5}" x2="{CW}" y2="{H - .5}" stroke="{PURPLE}" stroke-opacity=".16"/>' + (
+        f'<line x1="{CW - .5}" y1="0" x2="{CW - .5}" y2="{H}" stroke="{PURPLE}" stroke-opacity=".16"/>' if col < 2 else ""
     )
-    blips = "".join(
-        f'<circle cx="{cx + math.cos(a) * rr:.0f}" cy="{cy + math.sin(a) * rr:.0f}" r="3" fill="{CYAN}" class="bl" style="animation-delay:{d}s"/>'
-        for a, rr, d in [(0.6, 70, .8), (2.2, 95, 2.2), (3.9, 50, 3.6), (5.2, 108, 4.9), (1.4, 38, 1.5)]
-    )
-    body = f"""<rect width="{W}" height="{H}" rx="14" fill="url(#bg)"/><g>{stars(30, W, H, 9)}</g>{rings}
-<line x1="{cx - 140}" y1="{cy}" x2="{cx + 140}" y2="{cy}" stroke="{PURPLE}" stroke-opacity=".35"/><line x1="{cx}" y1="0" x2="{cx}" y2="{H}" stroke="{PURPLE}" stroke-opacity=".25"/>
-<g style="transform-origin:{cx}px {cy}px;animation:spin 5s linear infinite"><path d="M{cx} {cy} L{cx} {cy - 120} A120 120 0 0 0 {cx - 104} {cy - 60} Z" fill="url(#rad)"/><line x1="{cx}" y1="{cy}" x2="{cx}" y2="{cy - 120}" stroke="{LILAC}" stroke-width="1.5"/></g>
-{blips}
-<circle cx="{cx}" cy="{cy}" r="5" fill="#fff"/><circle cx="{cx}" cy="{cy}" r="5" fill="none" stroke="#fff" style="transform-box:fill-box;transform-origin:center;animation:ping 2.4s ease-out infinite"/>
-<text x="40" y="52" class="l">XYNORASH</text><text x="40" y="72" class="s">isn&#8217;t a name.</text>
-<text x="860" y="52" text-anchor="end" class="l">COORDINATE</text><text x="860" y="72" text-anchor="end" class="s">x &#8594; unknown &#183; y &#8594; unknown &#183; z &#8594; past the edge</text>
-<text x="40" y="232" class="s">scanning<tspan style="animation:blink 1s steps(1) infinite"> &#9646;</tspan></text><text x="860" y="232" text-anchor="end" class="s">5 signals locked</text>"""
-    css = f""".l{{font:700 16px {FONT};fill:#fff;letter-spacing:4px}}.s{{font:400 11px {FONT};fill:#9d8fd6}}
-@keyframes ping{{0%{{transform:scale(1);opacity:.8}}100%{{transform:scale(7);opacity:0}}}}
-.bl{{transform-box:fill-box;transform-origin:center;animation:blip 5s infinite}}
-@keyframes blip{{0%,28%{{opacity:0;transform:scale(.3)}}34%{{opacity:1;transform:scale(1.6)}}70%{{opacity:.5;transform:scale(1)}}100%{{opacity:0}}}}"""
-    defs = f'<linearGradient id="rad" gradientUnits="userSpaceOnUse" x1="{cx}" y1="{cy - 120}" x2="{cx - 104}" y2="{cy - 60}"><stop offset="0" stop-color="{PURPLE}" stop-opacity=".6"/><stop offset="1" stop-color="{PURPLE}" stop-opacity="0"/></linearGradient>'
-    write("coordinate.svg", svg(W, H, body, css, "Xynorash is not a name, it is a coordinate", defs))
+    if icon:
+        inner = f"""<rect width="{CW}" height="{H}" fill="url(#bglow)"/>
+<g style="overflow:hidden"><rect x="0" y="0" width="120" height="{H}" fill="url(#sw)" opacity=".08" style="animation:sweep 5s {col * .7:.1f}s ease-in-out infinite"/></g>
+<circle cx="46" cy="{H / 2}" r="17" fill="none" stroke="{colr}" stroke-opacity=".6" style="transform-box:fill-box;transform-origin:center;animation:sig 3s ease-out infinite"/>
+<circle cx="46" cy="{H / 2}" r="17" fill="{colr}" fill-opacity=".12"/>
+<g transform="translate(34 {H / 2 - 12})">{ICONS[icon].format(c=colr)}</g>
+<text x="82" y="{H / 2 - 3}" class="b">{label}</text><text x="82" y="{H / 2 + 16}" class="u">{sub}</text>
+<path d="M{CW - 38} {H / 2 - 6}l8 6-8 6" fill="none" stroke="{colr}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:nudge 2.4s ease-in-out infinite"/>"""
+    else:
+        bars = "".join(
+            f'<rect x="{34 + i * 11}" y="{H / 2 - 16}" width="5" height="32" rx="2.5" fill="url(#neon)" style="transform-box:fill-box;transform-origin:center;animation:eq {0.9 + (i * 37 % 7) / 10:.1f}s ease-in-out {-i * .13:.2f}s infinite"/>'
+            for i in range(9)
+        )
+        inner = f'{bars}<text x="{CW - 30}" y="{H / 2 - 3}" text-anchor="end" class="b">CHANNEL OPEN</text><text x="{CW - 30}" y="{H / 2 + 16}" text-anchor="end" class="u">I read everything</text>'
+    css = f".b{{font:700 14px {FONT};fill:#fff}}.u{{font:400 10.5px {FONT};fill:#9d8fd6}}@keyframes sig{{0%{{transform:scale(.8);opacity:.9}}100%{{transform:scale(1.9);opacity:0}}}}@keyframes nudge{{0%,100%{{transform:translateX(0)}}50%{{transform:translateX(4px)}}}}@keyframes eq{{0%,100%{{transform:scaleY(.2)}}50%{{transform:scaleY(1)}}}}"
+    defs = sdefs + f'<radialGradient id="bglow" cx="0" cy=".5" r="1"><stop offset="0" stop-color="{colr}" stop-opacity=".16"/><stop offset="1" stop-color="{colr}" stop-opacity="0"/></radialGradient>'
+    write(name, svg(CW, H, f"{op}{inner}{grid}{cl}", css, label or "channel open", defs))
 
 
 # --------------------------------------------------------------------------- footer + statusline
 
 
 def footer():
-    W, H, EY = 900, 190, 140
-    body = f"""<rect width="{W}" height="{H}" rx="14" fill="url(#bg)"/><g>{stars(40, W, EY - 20, 3)}</g>
-<ellipse cx="450" cy="{EY}" rx="400" ry="42" fill="url(#glow)" style="animation:pulse 4s infinite"/>{edge(W, EY, 20)}
+    W, H, EY = 900, SLICE_H["footer"], 150
+    op, cl, sdefs = shell("footer")
+    body = f"""{op}<g>{stars(40, W, EY - 20, 3)}</g>
+<ellipse cx="450" cy="{EY}" rx="400" ry="42" fill="url(#glow)" style="animation:pulse 4s infinite"/>{edge(W, EY)}
 {figure(450, EY - 12, .9)}
-<text x="450" y="62" text-anchor="middle" class="f1">past the edge, there&#8217;s always more.</text>
-<text x="450" y="{H - 14}" text-anchor="middle" class="f2">XYNORASH &#183; A COORDINATE &#183; NASH TEFISON</text>"""
-    css = f".f1{{font:600 22px {FONT};fill:url(#txt);animation:in 1.2s ease both}}.f2{{font:500 11px {FONT};fill:#7f70b8;letter-spacing:4px}}{RING_CSS}"
-    write("footer.svg", svg(W, H, body, css, "past the edge, there's always more"))
-
-
-# --------------------------------------------------------------------------- logo + dev card panels
-
-
-def data_uri(img):
-    b = io.BytesIO()
-    img.save(b, "PNG", optimize=True)
-    return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
-
-
-def logo_panel():
-    logo = Image.open(ROOT / "xynorash_logo.png").convert("RGBA").crop((225, 180, 1325, 850))
-    logo = logo.resize((int(logo.width * .8), int(logo.height * .8)), Image.LANCZOS)
-    url = data_uri(logo)
-    W, H, EY = 560, 440, 340
-    dw = 460
-    dh = dw * logo.height / logo.width
-    lx, ly = (W - dw) / 2, EY - dh - 14
-    floor_g, floor_defs, floor_css = floor(W, H, EY, lines=7, cols=11)
-    body = f"""<rect width="{W}" height="{H}" rx="18" fill="url(#bg)"/>
-<g clip-path="url(#pc)"><g filter="url(#blur28)" opacity=".75"><ellipse cx="170" cy="150" rx="170" ry="60" fill="{CYAN}" opacity=".28" style="animation:drift 10s ease-in-out infinite alternate"/><ellipse cx="400" cy="200" rx="170" ry="70" fill="{MAGENTA}" opacity=".3" style="animation:drift 13s ease-in-out infinite alternate-reverse"/></g>
-{stars(42, W, EY, 17)}<ellipse cx="{W / 2}" cy="{EY}" rx="270" ry="60" fill="url(#glow)" style="animation:pulse 4s infinite"/></g>
-{edge(W, EY)}
-<g clip-path="url(#pall)"><rect x="0" y="{EY + 3}" width="{W}" height="{H - EY - 3}" fill="#05040b" opacity=".7"/>
-{floor_g}</g>
-<g class="lg"><use href="#lg"/><g mask="url(#lm)"><rect x="{lx:.0f}" y="{ly:.0f}" width="140" height="{dh:.0f}" fill="url(#sw)" style="animation:sweep2 4.5s ease-in-out infinite"/></g></g>
-<text x="{W / 2}" y="{H - 20}" text-anchor="middle" class="tg">XYNORASH</text>
-<rect x="1" y="1" width="{W - 2}" height="{H - 2}" rx="17" fill="none" stroke="{PURPLE}" stroke-opacity=".35"/>"""
-    css = f""".lg{{animation:bob 4.5s ease-in-out infinite;filter:drop-shadow(0 0 14px rgba(160,90,255,.55))}}
-@keyframes sweep2{{0%{{transform:translateX(-180px)}}100%{{transform:translateX({dw + 120}px)}}}}
-.tg{{font:500 12px {FONT};fill:#7f70b8;letter-spacing:8px}}{floor_css}"""
-    defs = (
-        panel_defs(W, EY)
-        + f'<clipPath id="pall"><rect width="{W}" height="{H}" rx="18"/></clipPath>'
-        + floor_defs
-        + f'<image id="lg" href="{url}" x="{lx:.0f}" y="{ly:.0f}" width="{dw}" height="{dh:.0f}"/>'
-        + f'<mask id="lm"><use href="#lg"/></mask>'
-    )
-    write("logo.svg", svg(W, H, body, css, "Xynorash logo", defs))
-
-
-def card_panel():
-    src = ROOT / "devcard.png"
-    card = Image.open(src).convert("RGBA")
-    card = card.resize((470, int(470 * card.height / card.width)), Image.LANCZOS)
-    url = data_uri(card)
-    W, H, EY = 330, 440, 416
-    cw = 262
-    ch = cw * card.height / card.width
-    cx, cy = (W - cw) / 2, (EY - ch) / 2 + 4
-    body = f"""<rect width="{W}" height="{H}" rx="18" fill="url(#bg)"/>
-<g clip-path="url(#pc)"><g filter="url(#blur26)" opacity=".8"><ellipse cx="80" cy="120" rx="110" ry="80" fill="#5b3fd0" style="animation:drift 9s ease-in-out infinite alternate"/><ellipse cx="260" cy="300" rx="110" ry="80" fill="{CYAN}" opacity=".5" style="animation:drift 12s ease-in-out infinite alternate-reverse"/></g>{stars(30, W, EY, 31)}</g>
-<g style="transform-origin:165px {EY / 2:.0f}px;animation:spin 14s linear infinite"><ellipse cx="165" cy="{EY / 2:.0f}" rx="152" ry="196" fill="none" stroke="{PURPLE}" stroke-opacity=".35" stroke-dasharray="3 9"/><circle cx="165" cy="{EY / 2 - 196:.0f}" r="3" fill="{CYAN}"/></g>
-<g class="cd"><rect x="{cx - 4:.0f}" y="{cy - 4:.0f}" width="{cw + 8}" height="{ch + 8:.0f}" rx="26" fill="none" stroke="url(#neon)" stroke-width="2"/>
-<use href="#cdi"/><g mask="url(#cm)"><rect x="{cx:.0f}" y="{cy:.0f}" width="80" height="{ch:.0f}" fill="url(#sw)" opacity=".6" style="animation:sweep3 5s ease-in-out infinite"/></g></g>
-{edge(W, EY, 0, False)}
-<rect x="1" y="1" width="{W - 2}" height="{H - 2}" rx="17" fill="none" stroke="{PURPLE}" stroke-opacity=".35"/>"""
-    css = f""".cd{{transform-origin:165px {EY / 2:.0f}px;animation:wob 6s ease-in-out infinite;filter:drop-shadow(0 8px 18px rgba(120,80,255,.35))}}
-@keyframes wob{{0%,100%{{transform:translateY(0) rotate(-1.2deg)}}50%{{transform:translateY(-6px) rotate(1.2deg)}}}}
-@keyframes sweep3{{0%{{transform:translateX(-120px)}}100%{{transform:translateX({cw + 60}px)}}}}"""
-    defs = (
-        panel_defs(W, EY)
-        + '<filter id="blur26" x="-30%" y="-150%" width="160%" height="400%"><feGaussianBlur stdDeviation="26"/></filter>'
-        + f'<image id="cdi" href="{url}" x="{cx:.0f}" y="{cy:.0f}" width="{cw}" height="{ch:.0f}"/><mask id="cm"><use href="#cdi"/></mask>'
-    )
-    write("devcard.svg", svg(W, H, body, css, "Nash Tefison daily.dev card", defs))
+<text x="450" y="64" text-anchor="middle" class="f1">past the edge, there&#8217;s always more.</text>
+<text x="450" y="{H - 52}" text-anchor="middle" class="f2">XYNORASH &#183; A COORDINATE &#183; NASH TEFISON</text>
+<rect y="{H - 30}" width="{W}" height="30" fill="#0a071b" opacity=".9"/><rect y="{H - 30}" width="{W}" height="1" fill="{PURPLE}" opacity=".3"/>
+<g class="mode m-n"><rect y="{H - 30}" width="92" height="30" fill="{PURPLE}"/><text x="46" y="{H - 11}" text-anchor="middle" class="sl" fill="#0a071b">NORMAL</text></g>
+<g class="mode m-i"><rect y="{H - 30}" width="92" height="30" fill="{CYAN}"/><text x="46" y="{H - 11}" text-anchor="middle" class="sl" fill="#0a071b">INSERT</text></g>
+<g class="mode m-v"><rect y="{H - 30}" width="92" height="30" fill="{MAGENTA}"/><text x="46" y="{H - 11}" text-anchor="middle" class="sl" fill="#0a071b">VISUAL</text></g>
+<text x="108" y="{H - 11}" class="sl" fill="#9d8fd6">xynorash/README.md</text><text x="{W - 24}" y="{H - 11}" text-anchor="end" class="sl" fill="#7f70b8">utf-8  &#183;  markdown  &#183;  100%  &#183;  &#8734;:1</text>{cl}"""
+    css = f""".f1{{font:600 22px {FONT};fill:url(#txt);animation:in 1.2s ease both}}.f2{{font:500 11px {FONT};fill:#7f70b8;letter-spacing:4px}}.sl{{font:600 11px {FONT}}}{RING_CSS}
+.mode{{opacity:0}}.m-n{{animation:mn 12s steps(1) infinite}}.m-i{{animation:mi 12s steps(1) infinite}}.m-v{{animation:mv 12s steps(1) infinite}}
+@keyframes mn{{0%,40%{{opacity:1}}41%,100%{{opacity:0}}}}@keyframes mi{{0%,40%{{opacity:0}}41%,70%{{opacity:1}}71%,100%{{opacity:0}}}}@keyframes mv{{0%,70%{{opacity:0}}71%,85%{{opacity:1}}86%,100%{{opacity:0}}}}"""
+    write("footer.svg", svg(W, H, body, css, "past the edge, there's always more", sdefs))
 
 
 # --------------------------------------------------------------------------- run
 
 
 def main():
+    for old in OUT.glob("*.svg"):
+        old.unlink()
     hero()
-    for name, num, title, sub, seed in [
-        ("s-edge.svg", "01 · THE EDGE", "WHO STANDS HERE", "systems from the inside — if it has a feedback loop, I want it faster", 3),
-        ("s-stack.svg", "02 · FOOTING", "WHAT I STAND ON", "the ground under my feet", 8),
-        ("s-past.svg", "03 · PAST IT", "WHAT I FOUND OUT THERE", "every project is a directory — go explore", 13),
-        ("s-signal.svg", "04 · SIGNAL", "SEND A SIGNAL ACROSS", "I read everything", 21),
-    ]:
-        section(name, num, title, sub, seed)
-    ticker()
-    about()
-    stack()
-    projects()
-    coordinate()
-    button("c-github.svg", "gh", "GitHub", "github.com/Xynorash", LILAC)
-    button("c-mail.svg", "mail", "Email", "nashtefison@gmail.com", "#ff7a6b")
-    button("c-linkedin.svg", "in", "LinkedIn", "nash-tefison", "#4a9ae8")
-    button("c-dailydev.svg", "dd", "daily.dev", "xynorash", CYAN)
-    button("c-facebook.svg", "fb", "Facebook", "profile", "#6a8ff5")
-    footer()
     logo_panel()
     card_panel()
+    ticker()
+    coordinate()
+    section("h1", "01 · THE EDGE", "WHO STANDS HERE", "systems from the inside — if it has a feedback loop, I want it faster", 3)
+    about()
+    section("h2", "02 · FOOTING", "WHAT I STAND ON", "the ground under my feet", 8)
+    stack()
+    section("h3", "03 · PAST IT", "WHAT I FOUND OUT THERE", "every project is a directory — go explore", 13)
+    projects()
+    section("h4", "04 · SIGNAL", "SEND A SIGNAL ACROSS", "I read everything", 21)
+    cell("c-github.svg", 1, 0, "gh", "GitHub", "github.com/Xynorash", LILAC)
+    cell("c-mail.svg", 1, 1, "mail", "Email", "nashtefison@gmail.com", "#ff7a6b")
+    cell("c-linkedin.svg", 1, 2, "in", "LinkedIn", "nash-tefison", "#4a9ae8")
+    cell("c-dailydev.svg", 2, 0, "dd", "daily.dev", "xynorash", CYAN)
+    cell("c-facebook.svg", 2, 1, "fb", "Facebook", "profile", "#6a8ff5")
+    cell("c-channel.svg", 2, 2, None, "", "", PURPLE)
+    footer()
 
 
 if __name__ == "__main__":
