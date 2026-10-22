@@ -8,13 +8,17 @@
 
 <br /><br />
 
+<img src="assets/ticker.svg" alt="Rust · Dart · Flutter · Lua · PowerShell · Neovim · Arch · Hyprland" width="900" />
+
+<br />
+
 <img src="assets/coordinate.svg" alt="Xynorash isn’t a name — it’s a coordinate." width="900" />
 
 <br />
 
 <img src="assets/s-edge.svg" alt="01 · The edge — who stands here" width="900" />
 
-<img src="assets/about.svg" alt="Principles: spec first, measure before believing, document what was verified, fail closed" width="900" />
+<img src="assets/about.svg" alt="principles.md — spec first, measure before believing, document what was verified, fail closed" width="900" />
 
 <br />
 
