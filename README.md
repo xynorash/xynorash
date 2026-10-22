@@ -10,6 +10,10 @@
 
 <br /><br />
 
+<img src="assets/coordinate.svg" alt="Xynorash isn’t a name — it’s a coordinate." width="900" />
+
+<br />
+
 <img src="assets/s-edge.svg" alt="01 · The edge — who stands here" width="900" />
 
 <img src="assets/about.svg" alt="Principles: spec first, measure before believing, document what was verified, fail closed" width="900" />
@@ -30,7 +34,7 @@
 
 <img src="assets/s-signal.svg" alt="04 · Signal — send a signal across" width="900" />
 
-<a href="https://github.com/XNash"><img src="assets/c-github.svg" alt="GitHub" width="270" /></a>
+<a href="https://github.com/Xynorash"><img src="assets/c-github.svg" alt="GitHub" width="270" /></a>
 <a href="mailto:nashtefison@gmail.com"><img src="assets/c-mail.svg" alt="Email" width="270" /></a>
 <a href="https://www.linkedin.com/in/nash-tefison-5a343b315"><img src="assets/c-linkedin.svg" alt="LinkedIn" width="270" /></a>
 <br />
