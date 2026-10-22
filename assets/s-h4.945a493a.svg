@@ -7,7 +7,7 @@
 <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#907AD6" stop-opacity=".5"/><stop offset="1" stop-color="#907AD6" stop-opacity="0"/></radialGradient>
 <filter id="blur" x="-10%" y="-400%" width="120%" height="900%"><feGaussianBlur stdDeviation="5"/></filter>
 <filter id="blur28" x="-40%" y="-200%" width="180%" height="500%"><feGaussianBlur stdDeviation="28"/></filter>
-<linearGradient id="gbg" gradientUnits="userSpaceOnUse" x1="0" y1="-2392" x2="0" y2="476"><stop offset="0" stop-color="#05040c"/><stop offset=".45" stop-color="#0e0922"/><stop offset="1" stop-color="#1d1442"/></linearGradient><clipPath id="outer"><rect x="0" y="0" width="900" height="72" rx="0"/></clipPath><clipPath id="rc"><rect width="900" height="72"/></clipPath><filter id="blur22" x="-30%" y="-150%" width="160%" height="400%"><feGaussianBlur stdDeviation="22"/></filter></defs><style>
+<linearGradient id="gbg" gradientUnits="userSpaceOnUse" x1="0" y1="-2690" x2="0" y2="552"><stop offset="0" stop-color="#05040c"/><stop offset=".45" stop-color="#0e0922"/><stop offset="1" stop-color="#1d1442"/></linearGradient><clipPath id="outer"><rect x="0" y="0" width="900" height="72" rx="0"/></clipPath><clipPath id="rc"><rect width="900" height="72"/></clipPath><filter id="blur22" x="-30%" y="-150%" width="160%" height="400%"><feGaussianBlur stdDeviation="22"/></filter></defs><style>
 .tw{animation:tw 4s ease-in-out infinite}
 @keyframes tw{0%,100%{opacity:.12}50%{opacity:1}}
 @keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}

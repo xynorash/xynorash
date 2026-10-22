@@ -60,8 +60,11 @@ def svg(w, h, body, css="", label="", defs=""):
     )
 
 
+ASSETS = {}
+
+
 def write(name, text):
-    (OUT / name).write_text(text, encoding="utf-8")
+    ASSETS[name] = text
 
 
 def stars(n, w, h, seed, rmax=1.5):
@@ -135,9 +138,9 @@ RING_CSS = "@keyframes ring{0%{transform:scale(.5);opacity:.8}100%{transform:sca
 # Each slice paints a gradient addressed in *card* coordinates, so seams vanish.
 
 SLICE_H = {
-    "hero": 500, "identity": 480, "ticker": 44, "coordinate": 260,
-    "h1": 72, "about": 250, "h2": 72, "stack": 250, "h3": 72, "projects": 392,
-    "h4": 72, "signal1": 92, "signal2": 92, "footer": 220,
+    "hero": 500, "identity": 480, "ticker": 44, "gA": 44, "coordinate": 260, "gB": 44,
+    "h1": 72, "about": 290, "gC": 40, "h2": 72, "stack": 260, "gD": 40,
+    "h3": 72, "projects": 432, "gE": 40, "h4": 72, "signal1": 108, "signal2": 108, "gF": 44, "footer": 220,
 }
 ORDER = list(SLICE_H)
 Y0, _acc = {}, 0
@@ -172,6 +175,18 @@ def shell(key, w=900, sides="lr"):
             close += f'<line x1="{w - .5}" y1="0" x2="{w - .5}" y2="{h}" {line}/>'
     open_ = f'<g clip-path="url(#outer)"><rect width="{w}" height="{h}" fill="url(#gbg)"/>'
     return open_, close + "</g>", defs
+
+
+# --------------------------------------------------------------------------- breathing room
+
+
+def gap(key, seed):
+    W, H = 900, SLICE_H[key]
+    op, cl, sdefs = shell(key)
+    body = f"""{op}<g>{stars(7, W, H, seed)}</g>
+<path d="M{W / 2 - 4} {H / 2}l4 -4 4 4 -4 4z" fill="{LILAC}" style="animation:pulse 3s {seed % 3}s infinite"/>
+<line x1="{W / 2 - 150}" y1="{H / 2}" x2="{W / 2 - 16}" y2="{H / 2}" stroke="url(#edge)" stroke-opacity=".5"/><line x1="{W / 2 + 16}" y1="{H / 2}" x2="{W / 2 + 150}" y2="{H / 2}" stroke="url(#edge)" stroke-opacity=".5"/>{cl}"""
+    write(f"{key}.svg", svg(W, H, body, "", "", sdefs))
 
 
 # --------------------------------------------------------------------------- hero
@@ -411,7 +426,8 @@ def section(key, num, title, sub, seed):
 
 
 def about():
-    W, H = 900, SLICE_H["about"]
+    SH = SLICE_H["about"]
+    W, H = 844, SH - 40
     op, cl, sdefs = shell("about")
     lines = [
         ("spec first.", " measure before believing."),
@@ -419,7 +435,7 @@ def about():
         ("when a heuristic can be wrong,", " make the failure a test."),
         ("fail closed.", " if safety can’t be established, say no."),
     ]
-    body = f"""{op}<g>{stars(22, W, H, 5)}</g>
+    body = f"""<rect width="{W}" height="{H}" fill="#070516" fill-opacity=".62"/><g>{stars(22, W, H, 5)}</g>
 <rect x="0" y="0" width="{W}" height="38" fill="#0a071b" opacity=".85"/>
 <circle cx="26" cy="19" r="5" fill="#ff6b8b"/><circle cx="46" cy="19" r="5" fill="#f2c86a"/><circle cx="66" cy="19" r="5" fill="#6ad6a0"/>
 <rect x="110" y="8" width="170" height="30" rx="8" fill="#150f30"/><rect x="110" y="36" width="170" height="2" fill="url(#neon)"/>
@@ -438,8 +454,10 @@ def about():
         defs += f'<clipPath id="l{i}"><rect class="rv" id="lr{i}" x="70" y="{y - 20}" width="{n * 10.25 + 12:.0f}" height="28"/></clipPath>'
         css += f"#lr{i}{{transform-box:fill-box;transform-origin:left;animation:grow {n * .035:.2f}s steps({n}) {d}s both}}"
     body += f"""<text x="46" y="{84 + 4 * 38}" class="ln" text-anchor="end">5</text>
-<rect x="74" y="{84 + 4 * 38 - 17}" width="10" height="21" fill="{LILAC}" style="animation:blink 1s steps(1) infinite"/>{cl}"""
-    write("about.svg", svg(W, H, body, css, "principles.md: spec first, measure before believing, document what was verified, fail closed", defs))
+<rect x="74" y="{84 + 4 * 38 - 17}" width="10" height="21" fill="{LILAC}" style="animation:blink 1s steps(1) infinite"/>"""
+    defs += f'<clipPath id="win"><rect width="{W}" height="{H}" rx="14"/></clipPath>'
+    final = f'{op}<g transform="translate(28 20)"><g clip-path="url(#win)">{body}</g><rect width="{W}" height="{H}" rx="14" fill="none" stroke="{PURPLE}" stroke-opacity=".34"/></g>{cl}'
+    write("about.svg", svg(900, SH, final, css, "principles.md: spec first, measure before believing, document what was verified, fail closed", defs))
 
 
 # --------------------------------------------------------------------------- stack
@@ -488,7 +506,8 @@ def stack():
 
 
 def projects():
-    W, H = 900, SLICE_H["projects"]
+    SH = SLICE_H["projects"]
+    W, H = 844, SH - 40
     op, cl, sdefs = shell("projects")
     rows = [
         ("heaplens/", "live heap inspector for Windows", "Rust", "#f0a56a"),
@@ -497,9 +516,9 @@ def projects():
         ("xynorash-pwsh/", "a PowerShell cockpit with neon vitals", "PowerShell", "#9bd77a"),
         ("xyno-arch/", "my whole Arch desktop, reproducible", "Arch", "#6ab4f0"),
     ]
-    rh, top = 52, 108
+    rh, top = 52, 104
     cmd = "ls ~/past-the-edge"
-    body = f"""{op}<g>{stars(30, W, H, 21)}</g>
+    body = f"""<rect width="{W}" height="{H}" fill="#070516" fill-opacity=".62"/><g>{stars(30, W, H, 21)}</g>
 <rect width="{W}" height="40" fill="#0a071b" opacity=".85"/>
 <circle cx="26" cy="20" r="5" fill="#ff6b8b"/><circle cx="46" cy="20" r="5" fill="#f2c86a"/><circle cx="66" cy="20" r="5" fill="#6ad6a0"/>
 <text x="450" y="24" text-anchor="middle" class="d">xynorash@edge: ~</text>
@@ -521,8 +540,9 @@ def projects():
 <g style="overflow:hidden"><rect x="40" y="{y}" width="160" height="{rh - 8}" fill="url(#sw)" opacity=".07" style="animation:sweep 6s {i * .9:.1f}s ease-in-out infinite"/></g>
 <text x="44" y="{y + 28}" class="pr">&#10095;</text><text x="70" y="{y + 28}" class="nm">{n}</text><text x="290" y="{y + 28}" class="d2">{d_}</text>
 <circle cx="{W - 160}" cy="{y + 23}" r="4" fill="{c}" style="animation:pulse 2.4s {i * .3:.1f}s infinite"/><text x="{W - 40}" y="{y + 27}" text-anchor="end" class="tag" fill="{c}">{l.upper()}</text></g>"""
-    body += cl
-    write("projects.svg", svg(W, H, body, css, "Projects: heaplens, xynovim, xyno-scholar, xynorash-pwsh, xyno-arch", defs))
+    defs += f'<clipPath id="win"><rect width="{W}" height="{H}" rx="14"/></clipPath>'
+    final = f'{op}<g transform="translate(28 20)"><g clip-path="url(#win)">{body}</g><rect width="{W}" height="{H}" rx="14" fill="none" stroke="{PURPLE}" stroke-opacity=".34"/></g>{cl}'
+    write("projects.svg", svg(900, SH, final, css, "Projects: heaplens, xynovim, xyno-scholar, xynorash-pwsh, xyno-arch", defs))
 
 
 # --------------------------------------------------------------------------- signal cells
@@ -538,31 +558,34 @@ CW = 300
 
 
 def cell(name, row, col, icon, label, sub, colr):
-    """One cell of the 3-wide signal grid; icon=None draws the live-channel filler."""
+    """One tile of the 3-wide signal grid; icon=None draws the live-channel filler."""
     key = f"signal{row}"
-    H = SLICE_H[key]
+    SH = SLICE_H[key]
     sides = {0: "l", 1: "", 2: "r"}[col]
     op, cl, sdefs = shell(key, CW, sides)
-    grid = f'<line x1="0" y1="{H - .5}" x2="{CW}" y2="{H - .5}" stroke="{PURPLE}" stroke-opacity=".16"/>' + (
-        f'<line x1="{CW - .5}" y1="0" x2="{CW - .5}" y2="{H}" stroke="{PURPLE}" stroke-opacity=".16"/>' if col < 2 else ""
-    )
+    TW, TH = CW - 40, SH - 16
     if icon:
-        inner = f"""<rect width="{CW}" height="{H}" fill="url(#bglow)"/>
-<g style="overflow:hidden"><rect x="0" y="0" width="120" height="{H}" fill="url(#sw)" opacity=".08" style="animation:sweep 5s {col * .7:.1f}s ease-in-out infinite"/></g>
-<circle cx="46" cy="{H / 2}" r="17" fill="none" stroke="{colr}" stroke-opacity=".6" style="transform-box:fill-box;transform-origin:center;animation:sig 3s ease-out infinite"/>
-<circle cx="46" cy="{H / 2}" r="17" fill="{colr}" fill-opacity=".12"/>
-<g transform="translate(34 {H / 2 - 12})">{ICONS[icon].format(c=colr)}</g>
-<text x="82" y="{H / 2 - 3}" class="b">{label}</text><text x="82" y="{H / 2 + 16}" class="u">{sub}</text>
-<path d="M{CW - 38} {H / 2 - 6}l8 6-8 6" fill="none" stroke="{colr}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:nudge 2.4s ease-in-out infinite"/>"""
+        inner = f"""<rect width="{TW}" height="{TH}" rx="14" fill="url(#bglow)"/>
+<g style="overflow:hidden"><rect x="0" y="0" width="110" height="{TH}" fill="url(#sw)" opacity=".08" style="animation:sweep 5s {col * .7:.1f}s ease-in-out infinite"/></g>
+<circle cx="40" cy="{TH / 2}" r="17" fill="none" stroke="{colr}" stroke-opacity=".6" style="transform-box:fill-box;transform-origin:center;animation:sig 3s ease-out infinite"/>
+<circle cx="40" cy="{TH / 2}" r="17" fill="{colr}" fill-opacity=".12"/>
+<g transform="translate(28 {TH / 2 - 12})">{ICONS[icon].format(c=colr)}</g>
+<text x="72" y="{TH / 2 - 3}" class="b">{label}</text><text x="72" y="{TH / 2 + 15}" class="u">{sub}</text>
+<path d="M{TW - 34} {TH / 2 - 6}l8 6-8 6" fill="none" stroke="{colr}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:nudge 2.4s ease-in-out infinite"/>"""
     else:
         bars = "".join(
-            f'<rect x="{34 + i * 11}" y="{H / 2 - 16}" width="5" height="32" rx="2.5" fill="url(#neon)" style="transform-box:fill-box;transform-origin:center;animation:eq {0.9 + (i * 37 % 7) / 10:.1f}s ease-in-out {-i * .13:.2f}s infinite"/>'
-            for i in range(9)
+            f'<rect x="{22 + i * 10}" y="{TH / 2 - 16}" width="5" height="32" rx="2.5" fill="url(#neon)" style="transform-box:fill-box;transform-origin:center;animation:eq {0.9 + (i * 37 % 7) / 10:.1f}s ease-in-out {-i * .13:.2f}s infinite"/>'
+            for i in range(8)
         )
-        inner = f'{bars}<text x="{CW - 30}" y="{H / 2 - 3}" text-anchor="end" class="b">CHANNEL OPEN</text><text x="{CW - 30}" y="{H / 2 + 16}" text-anchor="end" class="u">I read everything</text>'
+        inner = f'{bars}<text x="{TW - 18}" y="{TH / 2 - 3}" text-anchor="end" class="b">CHANNEL OPEN</text><text x="{TW - 18}" y="{TH / 2 + 15}" text-anchor="end" class="u">I read everything</text>'
+    tile = (
+        f'<g transform="translate(20 8)"><clipPath id="tile"><rect width="{TW}" height="{TH}" rx="14"/></clipPath>'
+        f'<rect width="{TW}" height="{TH}" rx="14" fill="#070516" fill-opacity=".55"/><g clip-path="url(#tile)">{inner}</g>'
+        f'<rect width="{TW}" height="{TH}" rx="14" fill="none" stroke="{colr}" stroke-opacity=".45"/></g>'
+    )
     css = f".b{{font:700 14px {FONT};fill:#fff}}.u{{font:400 10.5px {FONT};fill:#9d8fd6}}@keyframes sig{{0%{{transform:scale(.8);opacity:.9}}100%{{transform:scale(1.9);opacity:0}}}}@keyframes nudge{{0%,100%{{transform:translateX(0)}}50%{{transform:translateX(4px)}}}}@keyframes eq{{0%,100%{{transform:scaleY(.2)}}50%{{transform:scaleY(1)}}}}"
     defs = sdefs + f'<radialGradient id="bglow" cx="0" cy=".5" r="1"><stop offset="0" stop-color="{colr}" stop-opacity=".16"/><stop offset="1" stop-color="{colr}" stop-opacity="0"/></radialGradient>'
-    write(name, svg(CW, H, f"{op}{inner}{grid}{cl}", css, label or "channel open", defs))
+    write(name, svg(CW, SH, f"{op}{tile}{cl}", css, label or "channel open", defs))
 
 
 # --------------------------------------------------------------------------- footer + statusline
@@ -590,20 +613,72 @@ def footer():
 # --------------------------------------------------------------------------- run
 
 
-def main():
+SITE = "https://xynorash.github.io/xynorash/"
+
+
+def emit():
+    """Write assets under content-hashed names (defeats GitHub's image cache) and regenerate README.md."""
+    import hashlib
+
     for old in OUT.glob("*.svg"):
         old.unlink()
+    names = {}
+    for name, text in ASSETS.items():
+        digest = hashlib.sha1(text.encode()).hexdigest()[:8]
+        names[name] = f"assets/{Path(name).stem}.{digest}.svg"
+        (ROOT / names[name]).write_text(text, encoding="utf-8")
+
+    def img(n, alt, w, link=None):
+        tag = f'<img src="{names[n]}" alt="{alt}" width="{w}" align="top" />'
+        return f'<a href="{link}">{tag}</a>' if link else tag
+
+    full = "100%"
+    rows = [
+        img("hero.svg", "Every system has an edge. I like to stand on it, curious, and see what's past it.", full, SITE),
+        img("logo.svg", "Xynorash", "62.2%", SITE) + img("devcard.svg", "Nash Tefison's daily.dev card", "37.7%", "https://daily.dev/xynorash"),
+        img("ticker.svg", "Rust · Dart · Flutter · Lua · PowerShell · Neovim · Arch · Hyprland", full),
+        img("gA.svg", "", full),
+        img("coordinate.svg", "Xynorash isn\u2019t a name \u2014 it\u2019s a coordinate.", full),
+        img("gB.svg", "", full),
+        img("s-h1.svg", "01 · The edge — who stands here", full),
+        img("about.svg", "principles.md — spec first, measure before believing, document what was verified, fail closed", full),
+        img("gC.svg", "", full),
+        img("s-h2.svg", "02 · Footing — what I stand on", full),
+        img("stack.svg", "Rust, Dart/Flutter, PowerShell + Lua, Neovim, Arch + Hyprland", full),
+        img("gD.svg", "", full),
+        img("s-h3.svg", "03 · Past it — what I found out there", full),
+        img("projects.svg", "heaplens, xynovim, xyno-scholar, xynorash-pwsh, xyno-arch", full, SITE),
+        img("gE.svg", "", full),
+        img("s-h4.svg", "04 · Signal — send a signal across", full),
+        img("c-github.svg", "GitHub", "33.3%", "https://github.com/Xynorash")
+        + img("c-mail.svg", "Email", "33.3%", "mailto:nashtefison@gmail.com")
+        + img("c-linkedin.svg", "LinkedIn", "33.3%", "https://www.linkedin.com/in/nash-tefison-5a343b315"),
+        img("c-dailydev.svg", "daily.dev", "33.3%", "https://app.daily.dev/xynorash")
+        + img("c-facebook.svg", "Facebook", "33.3%", "https://www.facebook.com/profile.php?id=100014438106807")
+        + img("c-channel.svg", "Channel open \u2014 I read everything", "33.3%"),
+        img("gF.svg", "", full),
+        img("footer.svg", "past the edge, there's always more.", full),
+    ]
+    (ROOT / "README.md").write_text('<div align="center">\n\n' + "\n".join(rows) + "\n\n</div>\n", encoding="utf-8")
+
+
+def main():
     hero()
     logo_panel()
     card_panel()
     ticker()
+    gap("gA", 1)
     coordinate()
+    gap("gB", 2)
     section("h1", "01 · THE EDGE", "WHO STANDS HERE", "systems from the inside — if it has a feedback loop, I want it faster", 3)
     about()
+    gap("gC", 3)
     section("h2", "02 · FOOTING", "WHAT I STAND ON", "the ground under my feet", 8)
     stack()
+    gap("gD", 4)
     section("h3", "03 · PAST IT", "WHAT I FOUND OUT THERE", "every project is a directory — go explore", 13)
     projects()
+    gap("gE", 5)
     section("h4", "04 · SIGNAL", "SEND A SIGNAL ACROSS", "I read everything", 21)
     cell("c-github.svg", 1, 0, "gh", "GitHub", "github.com/Xynorash", LILAC)
     cell("c-mail.svg", 1, 1, "mail", "Email", "nashtefison@gmail.com", "#ff7a6b")
@@ -611,7 +686,9 @@ def main():
     cell("c-dailydev.svg", 2, 0, "dd", "daily.dev", "xynorash", CYAN)
     cell("c-facebook.svg", 2, 1, "fb", "Facebook", "profile", "#6a8ff5")
     cell("c-channel.svg", 2, 2, None, "", "", PURPLE)
+    gap("gF", 6)
     footer()
+    emit()
 
 
 if __name__ == "__main__":
