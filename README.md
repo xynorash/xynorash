@@ -1,7 +1,7 @@
 <div align="center">
 
 <a href="https://xynorash.github.io/xynorash/"><img src="assets/hero.3c660d07.svg" alt="Every system has an edge. I like to stand on it, curious, and see what's past it." width="100%" align="top" /></a>
-<a href="https://xynorash.github.io/xynorash/"><img src="assets/logo.2672a7be.svg" alt="Xynorash" width="62.2%" align="top" /></a><a href="https://daily.dev/xynorash"><img src="assets/devcard.8971216d.svg" alt="Nash Tefison's daily.dev card" width="37.7%" align="top" /></a>
+<a href="https://xynorash.github.io/xynorash/"><img src="assets/logo.2672a7be.svg" alt="Xynorash" width="62.2%" align="top" /></a><a href="https://daily.dev/xynorash"><img src="assets/devcard.929f8a03.svg" alt="Nash Tefison's daily.dev card" width="37.7%" align="top" /></a>
 <img src="assets/ticker.25ff7464.svg" alt="Rust · Dart · Flutter · Lua · Terminal · Neovim · Arch · Hyprland" width="100%" align="top" />
 <img src="assets/gA.942c6347.svg" alt="" width="100%" align="top" />
 <img src="assets/coordinate.d4f3e79d.svg" alt="Xynorash isn’t a name — it’s a coordinate." width="100%" align="top" />
