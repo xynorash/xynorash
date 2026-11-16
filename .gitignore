@@ -1,2 +1,7 @@
 site/build/
 site/.dart_tool/
+
+# private research and mockups (DOSSIER.md holds real names; never publish)
+docs/mockups/DOSSIER.md
+
+_site/

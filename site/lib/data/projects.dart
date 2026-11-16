@@ -109,6 +109,7 @@ Buffer(
       plain('line by line against the real files.'),
       blank,
       heading('# find me'),
+      link('← back to portfolio', '../'),
       link('→ github.com/XNash', 'https://github.com/XNash'),
       link('→ daily.dev/xynorash', 'https://app.daily.dev/xynorash'),
       blank,

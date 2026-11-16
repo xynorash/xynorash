@@ -1,0 +1,50 @@
+name: Deploy portfolio
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "portfolio/**"
+      - "site/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build Flutter app (served at /xynorash/ide/)
+        working-directory: site
+        run: |
+          flutter pub get
+          flutter build web --release --base-href /xynorash/ide/
+
+      - name: Assemble _site
+        run: |
+          mkdir -p _site/ide
+          cp -r portfolio/. _site/
+          cp -r site/build/web/. _site/ide/
+          rm -f _site/README.md
+          touch _site/.nojekyll
+
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: _site
+          publish_branch: gh-pages
+          force_orphan: false
+          keep_files: false
